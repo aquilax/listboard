@@ -1,12 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"html/template"
 	//"github.com/gosimple/slug"
+)
+
+const (
+	itemsPerPage = 10
 )
 
 type Listboard struct {
@@ -22,8 +25,8 @@ func NewListboard() *Listboard {
 	return &Listboard{}
 }
 
-func NewTemplateData() *TemplateData {
-	return &TemplateData{}
+func NewTemplateData() TemplateData {
+	return make(TemplateData)
 }
 
 func render(data *TemplateData, w http.ResponseWriter, r *http.Request, filenames ...string) {
@@ -38,15 +41,23 @@ func (l *Listboard) Run() {
 	l.config = NewConfig()
 	l.db = NewDatabase(l.config)
 	r := mux.NewRouter()
+	
+	title := "Title"
+	data := NewTemplateData()
+	data["Title"] = title;
+
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		data := NewTemplateData()
-		render(data, w, r, "templates/layout.html", "templates/index.html")
+		page := 0
+		data["Lists"] = l.db.getChildNodes(0, itemsPerPage, page);
+		render(&data, w, r, "templates/layout.html", "templates/index.html")
 	})
 	r.HandleFunc("/list/{listId}", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "list")
+		data := NewTemplateData()
+		render(&data, w, r, "templates/layout.html", "templates/index.html")
 	})
 	r.HandleFunc("/list/vote/{listId}/{itemId}", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "vote")
+		data := NewTemplateData()
+		render(&data, w, r, "templates/layout.html", "templates/index.html")
 	})
 	http.Handle("/", r)
 	if err := http.ListenAndServe(l.config.Server, nil); err != nil {
