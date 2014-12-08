@@ -1,3 +1,13 @@
 {{define "content"}}
-index
+	<h1>{{ .Title }}</h1>
+	<div id="cmd">[<a href="/add.html">{{lang "new list"}}</a>]</div>
+	<ul>
+	{{range $i, $item := .Lists}}
+		<li>
+			<a href="list/{{$item.Id}}/{{slug $item.Title}}">{{$item.Title}}</a> |
+			{{lang "votes"}}: <b>{{$item.Vote}}</b> |
+			<em>{{ time $item.Updated }}</em>
+		</li>
+	{{end}}
+	</ul>
 {{end}}

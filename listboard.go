@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"html/template"
-	//"github.com/gosimple/slug"
 )
 
 const (
@@ -20,7 +19,13 @@ type Listboard struct {
 
 type TemplateData map[string]interface{}
 
-var helperFuncs = template.FuncMap{}
+var helperFuncs = template.FuncMap{
+	"lang": hfLang,
+	"time": hfTime,
+	"slug": hfSlug,
+	"anchor": hfAnchor,
+	"anchorTr": hfAnchorTr,
+}
 
 func NewListboard() *Listboard {
 	return &Listboard{}
@@ -44,7 +49,8 @@ func (l *Listboard) Run() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", http.HandlerFunc(l.indexHandler)).Methods("GET")
-	r.HandleFunc("/list/{listId}", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/add.html", http.HandlerFunc(l.addFormHandler)).Methods("GET")
+	r.HandleFunc("/list/{listId}/{slug}", func(w http.ResponseWriter, r *http.Request) {
 		data := NewTemplateData(nil)
 		render(&data, w, r, "templates/layout.html", "templates/index.html")
 	})
@@ -70,8 +76,14 @@ func (l *Listboard) indexHandler (w http.ResponseWriter, r *http.Request) {
 			page = 0;
 		}
 	}
-	sc := l.db.getSiteConfig("token")
+	sc := l.db.getSiteConfig("token") 
 	data := NewTemplateData(sc)
 	data["Lists"] = l.db.getChildNodes(0, itemsPerPage, page);
 	render(&data, w, r, "templates/layout.html", "templates/index.html")
+}
+
+func (l *Listboard) addFormHandler (w http.ResponseWriter, r *http.Request) {
+	sc := l.db.getSiteConfig("token") 
+	data := NewTemplateData(sc)
+	render(&data, w, r, "templates/layout.html", "templates/add.html")
 }
