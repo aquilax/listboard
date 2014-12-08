@@ -97,5 +97,5 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 	data := NewTemplateData(sc)
 	data["List"] = l.db.getList(listId)
 	data["Items"] = l.db.getChildNodes(0, itemsPerPage, 0, "votes")
-	render(&data, w, r, "templates/layout.html", "templates/index.html")
+	render(&data, w, r, "templates/layout.html", "templates/list.html")
 }
