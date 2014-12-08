@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -25,7 +26,7 @@ func NewListboard() *Listboard {
 	return &Listboard{}
 }
 
-func NewTemplateData() TemplateData {
+func NewTemplateData(sc *SiteConfig) TemplateData {
 	return make(TemplateData)
 }
 
@@ -41,26 +42,36 @@ func (l *Listboard) Run() {
 	l.config = NewConfig()
 	l.db = NewDatabase(l.config)
 	r := mux.NewRouter()
-	
-	title := "Title"
-	data := NewTemplateData()
-	data["Title"] = title;
 
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		page := 0
-		data["Lists"] = l.db.getChildNodes(0, itemsPerPage, page);
-		render(&data, w, r, "templates/layout.html", "templates/index.html")
-	})
+	r.HandleFunc("/", http.HandlerFunc(l.indexHandler)).Methods("GET")
 	r.HandleFunc("/list/{listId}", func(w http.ResponseWriter, r *http.Request) {
-		data := NewTemplateData()
+		data := NewTemplateData(nil)
 		render(&data, w, r, "templates/layout.html", "templates/index.html")
 	})
 	r.HandleFunc("/list/vote/{listId}/{itemId}", func(w http.ResponseWriter, r *http.Request) {
-		data := NewTemplateData()
+		data := NewTemplateData(nil)
 		render(&data, w, r, "templates/layout.html", "templates/index.html")
 	})
 	http.Handle("/", r)
+
 	if err := http.ListenAndServe(l.config.Server, nil); err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
+}
+
+func (l *Listboard) indexHandler (w http.ResponseWriter, r *http.Request) {
+	pageStr := r.URL.Query().Get("hostname")
+	page := 0
+	var err error
+	if len(pageStr) != 0 {
+		page, err = strconv.Atoi(pageStr)
+		if (err != nil) {
+			log.Printf("%s is not a valid page number", pageStr)
+			page = 0;
+		}
+	}
+	sc := l.db.getSiteConfig("token")
+	data := NewTemplateData(sc)
+	data["Lists"] = l.db.getChildNodes(0, itemsPerPage, page);
+	render(&data, w, r, "templates/layout.html", "templates/index.html")
 }
