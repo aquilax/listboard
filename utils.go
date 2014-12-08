@@ -1,8 +1,8 @@
 package main
 
 import (
-	"time"
 	"github.com/gosimple/slug"
+	"time"
 )
 
 func hfLang(t string) string {
@@ -17,10 +17,10 @@ func hfSlug(s string) string {
 	return slug.Make(s) + ".html"
 }
 
-func hfAnchor(link, label string) string{
+func hfAnchor(link, label string) string {
 	return label
 }
 
-func hfAnchorTr(link, label string) string{
+func hfAnchorTr(link, label string) string {
 	return label
 }

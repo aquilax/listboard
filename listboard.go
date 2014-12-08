@@ -1,11 +1,11 @@
 package main
 
 import (
-	"strconv"
 	"github.com/gorilla/mux"
+	"html/template"
 	"log"
 	"net/http"
-	"html/template"
+	"strconv"
 )
 
 const (
@@ -20,10 +20,10 @@ type Listboard struct {
 type TemplateData map[string]interface{}
 
 var helperFuncs = template.FuncMap{
-	"lang": hfLang,
-	"time": hfTime,
-	"slug": hfSlug,
-	"anchor": hfAnchor,
+	"lang":     hfLang,
+	"time":     hfTime,
+	"slug":     hfSlug,
+	"anchor":   hfAnchor,
 	"anchorTr": hfAnchorTr,
 }
 
@@ -50,10 +50,7 @@ func (l *Listboard) Run() {
 
 	r.HandleFunc("/", http.HandlerFunc(l.indexHandler)).Methods("GET")
 	r.HandleFunc("/add.html", http.HandlerFunc(l.addFormHandler)).Methods("GET")
-	r.HandleFunc("/list/{listId}/{slug}", func(w http.ResponseWriter, r *http.Request) {
-		data := NewTemplateData(nil)
-		render(&data, w, r, "templates/layout.html", "templates/index.html")
-	})
+	r.HandleFunc("/list/{listId}/{slug}", http.HandlerFunc(l.listHandler)).Methods("GET")
 	r.HandleFunc("/list/vote/{listId}/{itemId}", func(w http.ResponseWriter, r *http.Request) {
 		data := NewTemplateData(nil)
 		render(&data, w, r, "templates/layout.html", "templates/index.html")
@@ -65,25 +62,40 @@ func (l *Listboard) Run() {
 	}
 }
 
-func (l *Listboard) indexHandler (w http.ResponseWriter, r *http.Request) {
+func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) {
 	pageStr := r.URL.Query().Get("hostname")
 	page := 0
 	var err error
 	if len(pageStr) != 0 {
 		page, err = strconv.Atoi(pageStr)
-		if (err != nil) {
+		if err != nil {
 			log.Printf("%s is not a valid page number", pageStr)
-			page = 0;
+			page = 0
 		}
 	}
-	sc := l.db.getSiteConfig("token") 
+	sc := l.db.getSiteConfig("token")
 	data := NewTemplateData(sc)
-	data["Lists"] = l.db.getChildNodes(0, itemsPerPage, page);
+	data["Lists"] = l.db.getChildNodes(0, itemsPerPage, page, "updated")
 	render(&data, w, r, "templates/layout.html", "templates/index.html")
 }
 
-func (l *Listboard) addFormHandler (w http.ResponseWriter, r *http.Request) {
-	sc := l.db.getSiteConfig("token") 
+func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) {
+	sc := l.db.getSiteConfig("token")
 	data := NewTemplateData(sc)
 	render(&data, w, r, "templates/layout.html", "templates/add.html")
+}
+
+func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	listId, err := strconv.Atoi(vars["listId"])
+	if err != nil {
+		log.Printf("%s is not a valid list number", listId)
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+	sc := l.db.getSiteConfig("token")
+	data := NewTemplateData(sc)
+	data["List"] = l.db.getList(listId)
+	data["Items"] = l.db.getChildNodes(0, itemsPerPage, 0, "votes")
+	render(&data, w, r, "templates/layout.html", "templates/index.html")
 }

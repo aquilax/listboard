@@ -7,14 +7,14 @@ import (
 type Database struct{}
 
 type SiteConfig struct {
-	Css string
+	Css   string
 	Title string
 }
 
 type Node struct {
-	Id int
-	Title string
-	Vote int
+	Id      int
+	Title   string
+	Vote    int
 	Updated time.Time
 }
 
@@ -28,14 +28,23 @@ func (db *Database) getSiteConfig(token string) *SiteConfig {
 	return &SiteConfig{}
 }
 
-func (db *Database) getChildNodes(parentNodeId, itemsPerPage, page int) *NodeList {
+func (db *Database) getChildNodes(parentNodeId, itemsPerPage, page int, orderBy string) *NodeList {
 	nl := &NodeList{
 		&Node{
-			Id: 1,
-			Title: "Test item",
-			Vote: 3,
+			Id:      1,
+			Title:   "Test item",
+			Vote:    3,
 			Updated: time.Now(),
 		},
 	}
 	return nl
+}
+
+func (db *Database) getList(listId int) *Node {
+	return &Node{
+		Id:      1,
+		Title:   "Test item",
+		Vote:    3,
+		Updated: time.Now(),
+	}
 }
