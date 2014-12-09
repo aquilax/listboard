@@ -10,6 +10,16 @@
 			</tr>
 			<tr>
 				<td colspan="2">
+					<input type="radio" name="vote" value="y" class="radio" id="vyes"  />
+					<label for="vyes">{{lang "Up"}}</label>
+					<input type="radio" name="vote" value="n" class="radio" id="vno"  />
+					<label for="vno">{{lang "Down"}}</label>
+					<input type="radio" name="vote" value="z" checked="checked" class="radio" id="vskip"  />
+					<label for="vskip">{{lang "Comment"}}</label>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
 					<textarea name="body" cols="60" rows="10">{{ .Item.Body }}</textarea>
 				</td>
 			</tr>
