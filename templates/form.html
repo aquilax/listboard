@@ -1,0 +1,27 @@
+{{define "form"}}
+	<form method="post" action="/add/save">
+		<div id="namef">Leaf thiz fild aloun <input type="text" name="name" value="" id="namef" /></div>
+		<table>
+			<tr>
+				<td colspan="2">
+					<label for="title">{{lang "Title"}}</label> <em title="{{lang "Mandatory"}}">*</em><br/>
+					<input name="title" value="{{ .Item.Title }}" id="title" size="80" />
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<textarea name="body" cols="60" rows="10">{{ .Item.Body }}</textarea>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<label for="password">{{lang "Optional tripcode password"}}</label><br />
+					<input type="passwerd" name="password" size="60" id="password" />
+				</td>
+				<td valign="bottom" width="100px">
+					<button name="post" onclick="this.disabled=true;this.form.submit()">{{ lang "Submit" }}</button>
+				</td>
+			</tr>
+		</table>
+	</form>
+{{end}}

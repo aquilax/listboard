@@ -1,3 +1,30 @@
 {{define "content"}}
-list
+	<h2 id="{{.List.Id}}">{{.List.Title}}</h2>
+	<p>
+		{{if .List.Tripcode}} [<b>{{.List.Tripcode}}</b>]{{end}}
+		<em>{{ time .List.Created }}</em> |
+		<a href="/list/{{.List.Id}}/{{slug .List.Title}}">#{{.List.Id}}</a>
+	<p>
+	{{.List.Rendered}}
+	<hr />
+	{{if .Items}}
+	<ol>
+	{{range $i, $item := .Items}}
+		<li>
+			<h3 id="I{{$item.Id}}">{{$item.Title}}</h3>
+			<p>
+				[<a href="/list/{{$item.ParentId}}/{{$item.Id}}/vote.html#post" rel="nofollow">{{lang "vote"}}</a>]
+				{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>]{{end}}
+				<em>{{ time $item.Created }}</em> |
+				<a href="/list/{{$item.Id}}/{{slug $item.Title}}#I{{$item.Id}}">#{{$item.Id}}</a>
+				{{lang "rating"}}: <b>{{$item.Vote}}</b>
+			</p>
+			{{$item.Rendered}}
+			<hr/>
+		</li>
+	{{end}}
+	</ol>
+	{{end}}
+	<h2>{{ lang "New suggestion" }}</h2>
+	{{template "form" .}}
 {{end}}

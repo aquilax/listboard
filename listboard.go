@@ -51,7 +51,7 @@ func (l *Listboard) Run() {
 	r.HandleFunc("/", http.HandlerFunc(l.indexHandler)).Methods("GET")
 	r.HandleFunc("/add.html", http.HandlerFunc(l.addFormHandler)).Methods("GET")
 	r.HandleFunc("/list/{listId}/{slug}", http.HandlerFunc(l.listHandler)).Methods("GET")
-	r.HandleFunc("/list/vote/{listId}/{itemId}", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/list/{listId}/{itemId}/vote.html", func(w http.ResponseWriter, r *http.Request) {
 		data := NewTemplateData(nil)
 		render(&data, w, r, "templates/layout.html", "templates/index.html")
 	})
@@ -82,7 +82,7 @@ func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) {
 func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) {
 	sc := l.db.getSiteConfig("token")
 	data := NewTemplateData(sc)
-	render(&data, w, r, "templates/layout.html", "templates/add.html")
+	render(&data, w, r, "templates/layout.html", "templates/add.html", "templates/form.html")
 }
 
 func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +95,7 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	sc := l.db.getSiteConfig("token")
 	data := NewTemplateData(sc)
-	data["List"] = l.db.getList(listId)
+	data["List"] = l.db.getNode(listId)
 	data["Items"] = l.db.getChildNodes(0, itemsPerPage, 0, "votes")
-	render(&data, w, r, "templates/layout.html", "templates/list.html")
+	render(&data, w, r, "templates/layout.html", "templates/list.html", "templates/form.html")
 }

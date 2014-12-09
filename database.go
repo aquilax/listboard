@@ -13,9 +13,14 @@ type SiteConfig struct {
 
 type Node struct {
 	Id      int
+	ParentId int
 	Title   string
 	Vote    int
+	Tripcode string
+	Body string
+	Rendered string
 	Updated time.Time
+	Created time.Time
 }
 
 type NodeList []*Node
@@ -40,7 +45,7 @@ func (db *Database) getChildNodes(parentNodeId, itemsPerPage, page int, orderBy 
 	return nl
 }
 
-func (db *Database) getList(listId int) *Node {
+func (db *Database) getNode(listId int) *Node {
 	return &Node{
 		Id:      1,
 		Title:   "Test item",
