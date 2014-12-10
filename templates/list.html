@@ -11,13 +11,13 @@
 	<ol>
 	{{range $i, $item := .Items}}
 		<li>
-			<h4 id="I{{$item.Id}}">{{$item.Title}}</h4>
+			<h4 id="I{{$item.Id}}"><a href="/list/{{$item.ParentId}}/{{$item.Id}}/vote.html">{{$item.Title}}</a></h4>
 			<p>
-				[<a href="/list/{{$item.ParentId}}/{{$item.Id}}/vote.html#post">{{lang "vote"}}</a>]
+				[<a href="/list/{{$item.ParentId}}/{{$item.Id}}/vote.html#post">{{lang "vote"}}</a>] |
 				{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>]{{end}}
 				<em>{{ time $item.Created }}</em> |
+				{{lang "rating"}}: <b>{{$item.Vote}}</b> |
 				<a href="/list/{{$item.Id}}/{{slug $item.Title}}#I{{$item.Id}}">#{{$item.Id}}</a>
-				{{lang "rating"}}: <b>{{$item.Vote}}</b>
 			</p>
 			{{$item.Rendered}}
 			<hr/>

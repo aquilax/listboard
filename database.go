@@ -7,8 +7,11 @@ import (
 type Database struct{}
 
 type SiteConfig struct {
-	Css   string
-	Title string
+	Css         string
+	Title       string
+	Description string
+	AuthorName  string
+	AuthorEmail string
 }
 
 type Node struct {
@@ -46,7 +49,7 @@ func (db *Database) getNode(listId int) *Node {
 		Id:       listId,
 		Title:    "Test item",
 		Vote:     3,
-		Rendered: "Rendered",
+		Rendered: "<p>Rendered</p>",
 		Updated:  time.Now(),
 		Created:  time.Now(),
 	}

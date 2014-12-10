@@ -1,11 +1,14 @@
 package main
 
 import (
+	. "github.com/gorilla/feeds"
 	"github.com/gorilla/mux"
+	"github.com/sourcegraph/sitemap"
 	"html/template"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 const (
@@ -47,6 +50,9 @@ func (l *Listboard) Run() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", http.HandlerFunc(l.indexHandler)).Methods("GET")
+	r.HandleFunc("/feed.xml", http.HandlerFunc(l.feedHandler)).Methods("GET")
+	r.HandleFunc("/all.xml", http.HandlerFunc(l.feedAlllHandler)).Methods("GET")
+	r.HandleFunc("/sitemap.xml", http.HandlerFunc(l.sitemapHandler)).Methods("GET")
 
 	r.HandleFunc("/add.html", http.HandlerFunc(l.addFormHandler)).Methods("GET")
 	r.HandleFunc("/add.html", http.HandlerFunc(l.addFormSaveHandler)).Methods("POST")
@@ -134,4 +140,54 @@ func (l *Listboard) listSaveHandler(w http.ResponseWriter, r *http.Request) {
 
 func (l *Listboard) voteSaveHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, r.URL.String(), 301)
+}
+
+func (l *Listboard) feedHandler(w http.ResponseWriter, r *http.Request) {
+	sc := l.db.getSiteConfig("token")
+	feed := &Feed{
+		Title:       sc.Title,
+		Link:        &Link{Href: "http://" + r.Host + "/"},
+		Description: sc.Description,
+		Author:      &Author{sc.AuthorName, sc.AuthorEmail},
+		Created:     time.Now(),
+	}
+	nodes := l.db.getChildNodes(0, 20, 0, "created")
+	for _, node := range *nodes {
+		feed.Items = append(feed.Items, &Item{
+			Title:       node.Title,
+			Link:        &Link{Href: "http://" + r.Host + "/list/" + strconv.Itoa(node.Id) + "/" + hfSlug(node.Title)},
+			Description: node.Rendered,
+			Created:     node.Created,
+		})
+	}
+	w.Header().Set("Content-Type", "application/rss+xml")
+	err := feed.WriteRss(w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (l *Listboard) feedAlllHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("NOT IMPLEMENTED"))
+}
+
+func (l *Listboard) sitemapHandler(w http.ResponseWriter, r *http.Request) {
+	nodes := l.db.getChildNodes(0, 1000, 0, "created")
+	var urlSet sitemap.URLSet
+	for _, node := range *nodes {
+		urlSet.URLs = append(urlSet.URLs, sitemap.URL{
+			Loc:        "http://" + r.Host + "/list/" + strconv.Itoa(node.Id) + "/" + hfSlug(node.Title),
+			LastMod:    &node.Created,
+			ChangeFreq: sitemap.Daily,
+			Priority:   0.7,
+		})
+	}
+	xml, err := sitemap.Marshal(&urlSet)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/xml")
+	w.Write(xml)
 }

@@ -9,31 +9,35 @@
 <p>
 {{.List.Rendered}}
 <hr />
-<h3 id="{{.Item.Id}}">{{.Item.Title}}</h3>
-<p>
-	{{if .Item.Tripcode}} [<b>{{.Item.Tripcode}}</b>]{{end}}
-	<em>{{ time .Item.Created }}</em> |
-	<a href="/list/{{.List.Id}}/{{.Item.Id}}{{slug .Item.Title}}">#{{.Item.Id}}</a>
-<p>
-{{.Item.Rendered}}
-<hr />
-{{if .Items}}
-<ol>
-{{range $i, $item := .Items}}
-	<li>
-		<h4 id="I{{$item.Id}}">{{$item.Title}}</h4>
-		<p>
-			[<a href="/list/{{$item.ParentId}}/{{$item.Id}}/vote.html#post">{{lang "vote"}}</a>]
-			{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>]{{end}}
-			<em>{{ time $item.Created }}</em> |
-			<a href="/list/{{$item.Id}}/{{slug $item.Title}}#I{{$item.Id}}">#{{$item.Id}}</a>
-			{{lang "rating"}}: <b>{{$item.Vote}}</b>
-		</p>
-		{{$item.Rendered}}
-		<hr/>
-	</li>
-{{end}}
-</ol>
-{{end}}
+	<ol>
+		<li>
+			<h3 id="{{.Item.Id}}">{{.Item.Title}}</h3>
+			<p>
+				{{if .Item.Tripcode}} [<b>{{.Item.Tripcode}}</b>]{{end}}
+				<em>{{ time .Item.Created }}</em> |
+				{{lang "rating"}}: <b>{{.Item.Vote}}</b> |
+				<a href="/list/{{.List.Id}}/{{slug .Item.Title}}#I{{.Item.Id}}">#{{.Item.Id}}</a>
+			</p>
+			{{.Item.Rendered}}
+			<hr />
+			{{if .Items}}
+			<ol>
+			{{range $i, $item := .Items}}
+				<li>
+					<h4 id="I{{$item.Id}}">{{$item.Title}}</h4>
+					<p>
+						{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>]{{end}}
+						<em>{{ time $item.Created }}</em> |
+						{{lang "rating"}}: <b>{{$item.Vote}}</b> |
+						<a href="/list/{{$.List.Id}}/{{$.Item.Id}}/vote.html#I{{$item.Id}}">#{{$item.Id}}</a>
+					</p>
+					{{$item.Rendered}}
+					<hr/>
+				</li>
+			{{end}}
+			</ol>
+			{{end}}
+		</li>
+	</ol>
 {{template "form" .}}
 {{end}}
