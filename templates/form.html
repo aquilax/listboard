@@ -1,26 +1,29 @@
 {{define "form"}}
-	<form method="post" action="/add/save">
+	{{if .Errors }}
+		{{.Errors}}
+	{{end}}
+	<form method="post">
 		<div id="namef">Leaf thiz fild aloun <input type="text" name="name" value="" id="namef" /></div>
 		<table>
 			<tr>
 				<td colspan="2">
 					<label for="title">{{lang "Title"}}</label> <em title="{{lang "Mandatory"}}">*</em><br/>
-					<input name="title" value="{{ .Item.Title }}" id="title" size="80" />
+					<input name="title" value="{{ .Form.Title }}" id="title" size="80" />
 				</td>
 			</tr>
 			<tr>
 				<td colspan="2">
-					<input type="radio" name="vote" value="y" class="radio" id="vyes"  />
+					<input type="radio" name="vote" value="y" {{if eq .Form.Vote 1}}checked="checked"{{end}} class="radio" id="vyes"  />
 					<label for="vyes">{{lang "Up"}}</label>
-					<input type="radio" name="vote" value="n" class="radio" id="vno"  />
+					<input type="radio" name="vote" value="n" {{if eq .Form.Vote -1}}checked="checked"{{end}} class="radio" id="vno"  />
 					<label for="vno">{{lang "Down"}}</label>
-					<input type="radio" name="vote" value="z" checked="checked" class="radio" id="vskip"  />
+					<input type="radio" name="vote" value="z" {{if eq .Form.Vote 0}}checked="checked"{{end}} class="radio" id="vskip"  />
 					<label for="vskip">{{lang "Comment"}}</label>
 				</td>
 			</tr>
 			<tr>
 				<td colspan="2">
-					<textarea name="body" cols="60" rows="10">{{ .Item.Body }}</textarea>
+					<textarea name="body" cols="60" rows="10">{{ .Form.Body }}</textarea>
 				</td>
 			</tr>
 			<tr>

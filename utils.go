@@ -17,10 +17,27 @@ func hfSlug(s string) string {
 	return slug.Make(s) + ".html"
 }
 
-func hfAnchor(link, label string) string {
-	return label
+func tripcode(t string) string {
+	return "tripcode"
 }
 
-func hfAnchorTr(link, label string) string {
-	return label
+func renderText(t string) string {
+	return t
+}
+
+func getVote(t string) int {
+	if t == "y" {
+		return 1
+	}
+	if t == "n" {
+		return -1
+	}
+	return 0
+}
+
+func inHoneypot(t string) bool {
+	if len(t) > 0 {
+		return true
+	}
+	return false
 }

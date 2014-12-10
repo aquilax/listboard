@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -21,6 +22,7 @@ type Listboard struct {
 }
 
 type TemplateData map[string]interface{}
+type ValidationErrors []string
 
 var helperFuncs = template.FuncMap{
 	"lang": hfLang,
@@ -54,14 +56,9 @@ func (l *Listboard) Run() {
 	r.HandleFunc("/all.xml", http.HandlerFunc(l.feedAlllHandler)).Methods("GET")
 	r.HandleFunc("/sitemap.xml", http.HandlerFunc(l.sitemapHandler)).Methods("GET")
 
-	r.HandleFunc("/add.html", http.HandlerFunc(l.addFormHandler)).Methods("GET")
-	r.HandleFunc("/add.html", http.HandlerFunc(l.addFormSaveHandler)).Methods("POST")
-
-	r.HandleFunc("/list/{listId}/{slug}", http.HandlerFunc(l.listHandler)).Methods("GET")
-	r.HandleFunc("/list/{listId}/{slug}", http.HandlerFunc(l.listSaveHandler)).Methods("POST")
-
-	r.HandleFunc("/list/{listId}/{itemId}/vote.html", http.HandlerFunc(l.voteHandler)).Methods("GET")
-	r.HandleFunc("/list/{listId}/{itemId}/vote.html", http.HandlerFunc(l.voteSaveHandler)).Methods("POST")
+	r.HandleFunc("/add.html", http.HandlerFunc(l.addFormHandler)).Methods("GET", "POST")
+	r.HandleFunc("/list/{listId}/{slug}", http.HandlerFunc(l.listHandler)).Methods("GET", "POST")
+	r.HandleFunc("/list/{listId}/{itemId}/vote.html", http.HandlerFunc(l.voteHandler)).Methods("GET", "POST")
 
 	http.Handle("/", r)
 
@@ -89,7 +86,24 @@ func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) {
 	sc := l.db.getSiteConfig("token")
+
+	var errors ValidationErrors
+	var node Node
+
+	if r.Method == "POST" {
+		if !inHoneypot(r.FormValue("name")) {
+			node, errors = validateForm(r, 0)
+			if errors == nil {
+				// save and redirect
+				l.db.addNode(&node)
+				http.Redirect(w, r, "/", http.StatusFound)
+			}
+		}
+	}
+
 	data := NewTemplateData(sc)
+	data["Errors"] = errors
+	data["Form"] = node
 	render(&data, w, r, "templates/layout.html", "templates/add.html", "templates/form.html")
 }
 
@@ -128,18 +142,6 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 	data["Item"] = l.db.getNode(itemId)
 	data["Items"] = l.db.getChildNodes(itemId, itemsPerPage, 0, "created")
 	render(&data, w, r, "templates/layout.html", "templates/vote.html", "templates/form.html")
-}
-
-func (l *Listboard) addFormSaveHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, r.URL.String(), 301)
-}
-
-func (l *Listboard) listSaveHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, r.URL.String(), 301)
-}
-
-func (l *Listboard) voteSaveHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, r.URL.String(), 301)
 }
 
 func (l *Listboard) feedHandler(w http.ResponseWriter, r *http.Request) {
@@ -190,4 +192,25 @@ func (l *Listboard) sitemapHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/xml")
 	w.Write(xml)
+}
+
+func validateForm(r *http.Request, parentId int) (Node, ValidationErrors) {
+	node := Node{
+		ParentId: parentId,
+		Title:    strings.TrimSpace(r.FormValue("title")),
+		Vote:     getVote(r.FormValue("vote")),
+		Tripcode: tripcode(r.FormValue("password")),
+		Body:     r.FormValue("body"),
+	}
+	errors := ValidationErrors{}
+	if len(node.Title) < 3 {
+		errors = append(errors, hfLang("Title must be at least 3 characters long"))
+	}
+	if len(node.Title) < 10 {
+		errors = append(errors, hfLang("Please, write something"))
+	}
+	if len(errors) == 0 {
+		node.Rendered = renderText(node.Body)
+	}
+	return node, errors
 }

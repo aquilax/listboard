@@ -54,3 +54,7 @@ func (db *Database) getNode(listId int) *Node {
 		Created:  time.Now(),
 	}
 }
+
+func (db *Database) addNode(node *Node) (int, error) {
+	return 0, nil
+}
