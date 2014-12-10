@@ -20,11 +20,9 @@ type Listboard struct {
 type TemplateData map[string]interface{}
 
 var helperFuncs = template.FuncMap{
-	"lang":     hfLang,
-	"time":     hfTime,
-	"slug":     hfSlug,
-	"anchor":   hfAnchor,
-	"anchorTr": hfAnchorTr,
+	"lang": hfLang,
+	"time": hfTime,
+	"slug": hfSlug,
 }
 
 func NewListboard() *Listboard {
@@ -49,12 +47,16 @@ func (l *Listboard) Run() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", http.HandlerFunc(l.indexHandler)).Methods("GET")
+
 	r.HandleFunc("/add.html", http.HandlerFunc(l.addFormHandler)).Methods("GET")
+	r.HandleFunc("/add.html", http.HandlerFunc(l.addFormSaveHandler)).Methods("POST")
+
 	r.HandleFunc("/list/{listId}/{slug}", http.HandlerFunc(l.listHandler)).Methods("GET")
-	r.HandleFunc("/list/{listId}/{itemId}/vote.html", func(w http.ResponseWriter, r *http.Request) {
-		data := NewTemplateData(nil)
-		render(&data, w, r, "templates/layout.html", "templates/index.html")
-	})
+	r.HandleFunc("/list/{listId}/{slug}", http.HandlerFunc(l.listSaveHandler)).Methods("POST")
+
+	r.HandleFunc("/list/{listId}/{itemId}/vote.html", http.HandlerFunc(l.voteHandler)).Methods("GET")
+	r.HandleFunc("/list/{listId}/{itemId}/vote.html", http.HandlerFunc(l.voteSaveHandler)).Methods("POST")
+
 	http.Handle("/", r)
 
 	if err := http.ListenAndServe(l.config.Server, nil); err != nil {
@@ -96,6 +98,40 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 	sc := l.db.getSiteConfig("token")
 	data := NewTemplateData(sc)
 	data["List"] = l.db.getNode(listId)
-	data["Items"] = l.db.getChildNodes(0, itemsPerPage, 0, "votes")
+	data["Items"] = l.db.getChildNodes(listId, itemsPerPage, 0, "votes")
 	render(&data, w, r, "templates/layout.html", "templates/list.html", "templates/form.html")
+}
+
+func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	listId, err := strconv.Atoi(vars["listId"])
+	if err != nil {
+		log.Printf("%s is not a valid list number", listId)
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+	itemId, err := strconv.Atoi(vars["itemId"])
+	if err != nil {
+		log.Printf("%s is not a valid item number", listId)
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+	sc := l.db.getSiteConfig("token")
+	data := NewTemplateData(sc)
+	data["List"] = l.db.getNode(listId)
+	data["Item"] = l.db.getNode(itemId)
+	data["Items"] = l.db.getChildNodes(itemId, itemsPerPage, 0, "created")
+	render(&data, w, r, "templates/layout.html", "templates/vote.html", "templates/form.html")
+}
+
+func (l *Listboard) addFormSaveHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, r.URL.String(), 301)
+}
+
+func (l *Listboard) listSaveHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, r.URL.String(), 301)
+}
+
+func (l *Listboard) voteSaveHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, r.URL.String(), 301)
 }

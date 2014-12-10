@@ -12,15 +12,15 @@ type SiteConfig struct {
 }
 
 type Node struct {
-	Id      int
+	Id       int
 	ParentId int
-	Title   string
-	Vote    int
+	Title    string
+	Vote     int
 	Tripcode string
-	Body string
+	Body     string
 	Rendered string
-	Updated time.Time
-	Created time.Time
+	Updated  time.Time
+	Created  time.Time
 }
 
 type NodeList []*Node
@@ -35,21 +35,19 @@ func (db *Database) getSiteConfig(token string) *SiteConfig {
 
 func (db *Database) getChildNodes(parentNodeId, itemsPerPage, page int, orderBy string) *NodeList {
 	nl := &NodeList{
-		&Node{
-			Id:      1,
-			Title:   "Test item",
-			Vote:    3,
-			Updated: time.Now(),
-		},
+		db.getNode(0),
+		db.getNode(1),
 	}
 	return nl
 }
 
 func (db *Database) getNode(listId int) *Node {
 	return &Node{
-		Id:      1,
-		Title:   "Test item",
-		Vote:    3,
-		Updated: time.Now(),
+		Id:       listId,
+		Title:    "Test item",
+		Vote:     3,
+		Rendered: "Rendered",
+		Updated:  time.Now(),
+		Created:  time.Now(),
 	}
 }
