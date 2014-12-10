@@ -10,7 +10,7 @@ func hfLang(t string) string {
 }
 
 func hfTime(t time.Time) string {
-	return t.Format("01.02.2006 15.04")
+	return t.Format("01.02.2006 15:04")
 }
 
 func hfSlug(s string) string {

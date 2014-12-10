@@ -49,6 +49,7 @@ func (db *Database) getNode(listId int) *Node {
 	return &Node{
 		Id:       listId,
 		Title:    "Test item",
+		Tripcode: "triptitrip",
 		Vote:     3,
 		Rendered: "<p>Rendered</p>",
 		Updated:  time.Now(),
