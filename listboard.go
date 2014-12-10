@@ -35,7 +35,10 @@ func NewListboard() *Listboard {
 }
 
 func NewTemplateData(sc *SiteConfig) TemplateData {
-	return make(TemplateData)
+	td := make(TemplateData)
+	td["Title"] = "Title is not defined"
+	td["ShowVote"] = false
+	return td
 }
 
 func render(data *TemplateData, w http.ResponseWriter, r *http.Request, filenames ...string) {
@@ -116,7 +119,24 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sc := l.db.getSiteConfig("token")
+
+	var errors ValidationErrors
+	var node Node
+
+	if r.Method == "POST" {
+		if !inHoneypot(r.FormValue("name")) {
+			node, errors = validateForm(r, listId)
+			if errors == nil {
+				// save and redirect
+				l.db.addNode(&node)
+				http.Redirect(w, r, "/", http.StatusFound)
+			}
+		}
+	}
+
 	data := NewTemplateData(sc)
+	data["Errors"] = errors
+	data["Form"] = node
 	data["List"] = l.db.getNode(listId)
 	data["Items"] = l.db.getChildNodes(listId, itemsPerPage, 0, "votes")
 	render(&data, w, r, "templates/layout.html", "templates/list.html", "templates/form.html")
@@ -137,7 +157,25 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sc := l.db.getSiteConfig("token")
+
+	var errors ValidationErrors
+	var node Node
+
+	if r.Method == "POST" {
+		if !inHoneypot(r.FormValue("name")) {
+			node, errors = validateForm(r, itemId)
+			if errors == nil {
+				// save and redirect
+				l.db.addNode(&node)
+				http.Redirect(w, r, "/", http.StatusFound)
+			}
+		}
+	}
+
 	data := NewTemplateData(sc)
+	data["ShowVote"] = true
+	data["Errors"] = errors
+	data["Form"] = node
 	data["List"] = l.db.getNode(listId)
 	data["Item"] = l.db.getNode(itemId)
 	data["Items"] = l.db.getChildNodes(itemId, itemsPerPage, 0, "created")
@@ -158,7 +196,7 @@ func (l *Listboard) feedHandler(w http.ResponseWriter, r *http.Request) {
 		feed.Items = append(feed.Items, &Item{
 			Title:       node.Title,
 			Link:        &Link{Href: "http://" + r.Host + "/list/" + strconv.Itoa(node.Id) + "/" + hfSlug(node.Title)},
-			Description: node.Rendered,
+			Description: string(node.Rendered),
 			Created:     node.Created,
 		})
 	}
@@ -213,4 +251,8 @@ func validateForm(r *http.Request, parentId int) (Node, ValidationErrors) {
 		node.Rendered = renderText(node.Body)
 	}
 	return node, errors
+}
+
+func renderText(t string) template.HTML {
+	return template.HTML(t)
 }

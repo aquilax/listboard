@@ -1,6 +1,7 @@
 package main
 
 import (
+	"html/template"
 	"time"
 )
 
@@ -21,7 +22,7 @@ type Node struct {
 	Vote     int
 	Tripcode string
 	Body     string
-	Rendered string
+	Rendered template.HTML
 	Updated  time.Time
 	Created  time.Time
 }

@@ -11,6 +11,7 @@
 					<input name="title" value="{{ .Form.Title }}" id="title" size="80" />
 				</td>
 			</tr>
+			{{if .ShowVote}}
 			<tr>
 				<td colspan="2">
 					<input type="radio" name="vote" value="y" {{if eq .Form.Vote 1}}checked="checked"{{end}} class="radio" id="vyes"  />
@@ -21,6 +22,7 @@
 					<label for="vskip">{{lang "Comment"}}</label>
 				</td>
 			</tr>
+			{{end}}
 			<tr>
 				<td colspan="2">
 					<textarea name="body" cols="60" rows="10">{{ .Form.Body }}</textarea>

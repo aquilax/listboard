@@ -21,10 +21,6 @@ func tripcode(t string) string {
 	return "tripcode"
 }
 
-func renderText(t string) string {
-	return t
-}
-
 func getVote(t string) int {
 	if t == "y" {
 		return 1
