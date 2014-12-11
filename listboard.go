@@ -114,7 +114,7 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	listId, err := strconv.Atoi(vars["listId"])
 	if err != nil {
-		log.Printf("%s is not a valid list number", listId)
+		log.Printf("%d is not a valid list number", listId)
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
@@ -146,13 +146,13 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	listId, err := strconv.Atoi(vars["listId"])
 	if err != nil {
-		log.Printf("%s is not a valid list number", listId)
+		log.Printf("%d is not a valid list number", listId)
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
 	itemId, err := strconv.Atoi(vars["itemId"])
 	if err != nil {
-		log.Printf("%s is not a valid item number", listId)
+		log.Printf("%d is not a valid item number", listId)
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
