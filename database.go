@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"html/template"
@@ -22,41 +21,24 @@ type SiteConfig struct {
 }
 
 type Node struct {
-	Id       int           `db:"id"`
-	ParentId int           `db:"parent_id"`
-	DomainId int           `db:"domain_id"`
-	Title    string        `db:"title"`
-	Vote     int           `db:"vote"`
-	Tripcode string        `db:"tripcode"`
-	Body     string        `db:"body"`
-	Rendered template.HTML `db:"rendered"`
-	Status   int           `db:"status"`
-	Created  time.Time     `db:"created"`
-	Updated  time.Time     `db:"updated"`
+	Id           int    `db:"id"`
+	ParentId     int    `db:"parent_id"`
+	DomainId     int    `db:"domain_id"`
+	Title        string `db:"title"`
+	Vote         int    `db:"vote"`
+	Tripcode     string `db:"tripcode"`
+	Body         string `db:"body"`
+	Rendered     string `db:"rendered"`
+	RenderedHTML template.HTML
+	Status       int       `db:"status"`
+	Created      time.Time `db:"created"`
+	Updated      time.Time `db:"updated"`
 }
 
 type NodeList []*Node
 
 func NewModel(c *Config) *Model {
 	return &Model{}
-}
-
-func (h HTML) Value() (driver.Value, error) {
-	return []byte(h), nil
-}
-
-func (h *HTML) Scan(src interface{}) error {
-	var source string
-	switch src.(type) {
-	case string:
-		source = src.(string)
-	case []byte:
-		source = src.(string)
-	default:
-		return errors.New("Incompatible type for HTML")
-	}
-	*h = HTML(source)
-	return nil
 }
 
 func (m *Model) Init(config *Config) error {
