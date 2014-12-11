@@ -1,7 +1,11 @@
 package main
 
 import (
+	"github.com/aquilax/tripcode"
 	"github.com/gosimple/slug"
+	"github.com/microcosm-cc/bluemonday"
+	"github.com/russross/blackfriday"
+	"html/template"
 	"time"
 )
 
@@ -17,8 +21,8 @@ func hfSlug(s string) string {
 	return slug.Make(s) + ".html"
 }
 
-func tripcode(t string) string {
-	return "tripcode"
+func getTripcode(t string) string {
+	return tripcode.Tripcode(t)
 }
 
 func getVote(t string) int {
@@ -36,4 +40,10 @@ func inHoneypot(t string) bool {
 		return true
 	}
 	return false
+}
+
+func renderText(t string) template.HTML {
+	unsafe := blackfriday.MarkdownCommon([]byte(t))
+	html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
+	return template.HTML(html)
 }

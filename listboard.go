@@ -38,6 +38,7 @@ func NewTemplateData(sc *SiteConfig) TemplateData {
 	td := make(TemplateData)
 	td["Title"] = "Title is not defined"
 	td["ShowVote"] = false
+	td["Css"] = sc.Css
 	return td
 }
 
@@ -63,6 +64,8 @@ func (l *Listboard) Run() {
 	r.HandleFunc("/list/{listId}/{slug}", http.HandlerFunc(l.listHandler)).Methods("GET", "POST")
 	r.HandleFunc("/list/{listId}/{itemId}/vote.html", http.HandlerFunc(l.voteHandler)).Methods("GET", "POST")
 
+	// Static assets
+	r.PathPrefix("/assets").Handler(http.FileServer(http.Dir("./")))
 	http.Handle("/", r)
 
 	if err := http.ListenAndServe(l.config.Server, nil); err != nil {
@@ -237,7 +240,7 @@ func validateForm(r *http.Request, parentId int) (Node, ValidationErrors) {
 		ParentId: parentId,
 		Title:    strings.TrimSpace(r.FormValue("title")),
 		Vote:     getVote(r.FormValue("vote")),
-		Tripcode: tripcode(r.FormValue("password")),
+		Tripcode: getTripcode(r.FormValue("password")),
 		Body:     r.FormValue("body"),
 	}
 	errors := ValidationErrors{}
@@ -251,8 +254,4 @@ func validateForm(r *http.Request, parentId int) (Node, ValidationErrors) {
 		node.Rendered = renderText(node.Body)
 	}
 	return node, errors
-}
-
-func renderText(t string) template.HTML {
-	return template.HTML(t)
 }

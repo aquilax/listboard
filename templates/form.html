@@ -25,7 +25,14 @@
 			{{end}}
 			<tr>
 				<td colspan="2">
-					<textarea name="body" cols="60" rows="10">{{ .Form.Body }}</textarea>
+    				<button type="button" tabindex="-1" onclick="document.getElementById('imageUpload').click();return false;">{{lang "Image"}}</button>
+    				<button type="button" tabindex="-1" onclick="quote();return false;">{{lang "Quote"}}</button>
+    				<input id="imageUpload" style="visibility: collapse; width: 0px;" type="file" onchange="upload(this.files[0])">  
+  				</td>
+  			</tr> 
+			<tr>
+				<td colspan="2">
+					<textarea id="textarea" name="body" cols="60" rows="10">{{ .Form.Body }}</textarea>
 				</td>
 			</tr>
 			<tr>
