@@ -6,6 +6,6 @@ type Config struct {
 
 func NewConfig() *Config {
 	return &Config{
-		Server: ":8081",
+		Server: ":8080",
 	}
 }

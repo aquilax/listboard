@@ -34,7 +34,9 @@ func NewDatabase(c *Config) *Database {
 }
 
 func (db *Database) getSiteConfig(token string) *SiteConfig {
-	return &SiteConfig{}
+	return &SiteConfig{
+		Css: "style.css",
+	}
 }
 
 func (db *Database) getChildNodes(parentNodeId, itemsPerPage, page int, orderBy string) *NodeList {
