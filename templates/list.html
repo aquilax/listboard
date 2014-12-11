@@ -4,7 +4,7 @@
 		{{if .List.Tripcode}} [<b>{{.List.Tripcode}}</b>]{{end}}
 		<em>{{ time .List.Created }}</em>
 	<p>
-	{{.List.Rendered}}
+	{{.List.GetRendered}}
 	<hr />
 	{{if .Items}}
 	<ol>
@@ -17,7 +17,7 @@
 				<em>{{ time $item.Created }}</em> |
 				{{lang "rating"}}: <b>{{$item.Vote}}</b>
 			</p>
-			{{$item.Rendered}}
+			{{$item.GetRendered}}
 			<hr/>
 		</li>
 	{{end}}

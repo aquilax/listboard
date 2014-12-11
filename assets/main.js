@@ -25,27 +25,27 @@ function upload(file) {
 }
 
 function quote() {
-		var textComponent = document.getElementById('textarea'),
-			text = textComponent.value,
-			startPos = textComponent.selectionStart,
-			endPos = textComponent.selectionEnd,
-			selLenght,
-			segment,
-			newSegment = [];
-		if (startPos != undefined) {
-			selLength = endPos - startPos;
-			segment = text.substr(startPos, selLength);
-			segment.split("\n").forEach(function(row) {
-				newSegment.push("> " + row);
-			});
-			textComponent.value = [
-				text.substr(0, startPos),
-				newSegment.join("\n"),
-				text.substr(endPos)
-			].join("\n");
-		}
+	var textComponent = document.getElementById('textarea'),
+		text = textComponent.value,
+		startPos = textComponent.selectionStart,
+		endPos = textComponent.selectionEnd,
+		selLenght,
+		segment,
+		newSegment = [];
+	if (startPos != undefined) {
+		selLength = endPos - startPos;
+		segment = text.substr(startPos, selLength);
+		segment.split("\n").forEach(function(row) {
+			newSegment.push("> " + row);
+		});
+		textComponent.value = [
+			text.substr(0, startPos),
+			newSegment.join("\n"),
+			text.substr(endPos)
+		].join("\n");
 	}
-	// Find all the YouTube video embedded on a page
+}
+// Find all the YouTube video embedded on a page
 var videos = document.getElementsByClassName("youtube");
 
 for (var i = 0; i < videos.length; i++) {

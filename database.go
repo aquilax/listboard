@@ -21,24 +21,27 @@ type SiteConfig struct {
 }
 
 type Node struct {
-	Id           int    `db:"id"`
-	ParentId     int    `db:"parent_id"`
-	DomainId     int    `db:"domain_id"`
-	Title        string `db:"title"`
-	Vote         int    `db:"vote"`
-	Tripcode     string `db:"tripcode"`
-	Body         string `db:"body"`
-	Rendered     string `db:"rendered"`
-	RenderedHTML template.HTML
-	Status       int       `db:"status"`
-	Created      time.Time `db:"created"`
-	Updated      time.Time `db:"updated"`
+	Id       int       `db:"id"`
+	ParentId int       `db:"parent_id"`
+	DomainId int       `db:"domain_id"`
+	Title    string    `db:"title"`
+	Vote     int       `db:"vote"`
+	Tripcode string    `db:"tripcode"`
+	Body     string    `db:"body"`
+	Rendered string    `db:"rendered"`
+	Status   int       `db:"status"`
+	Created  time.Time `db:"created"`
+	Updated  time.Time `db:"updated"`
 }
 
 type NodeList []*Node
 
 func NewModel(c *Config) *Model {
 	return &Model{}
+}
+
+func (n *Node) GetRendered() template.HTML {
+	return template.HTML(n.Rendered)
 }
 
 func (m *Model) Init(config *Config) error {

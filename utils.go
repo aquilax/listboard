@@ -5,7 +5,6 @@ import (
 	"github.com/gosimple/slug"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday"
-	"html/template"
 	"time"
 )
 
@@ -42,7 +41,7 @@ func inHoneypot(t string) bool {
 	return false
 }
 
-func renderText(t string) template.HTML {
+func renderText(t string) string {
 	unsafe := blackfriday.MarkdownCommon([]byte(t))
-	return template.HTML(bluemonday.UGCPolicy().SanitizeBytes(unsafe))
+	return string(bluemonday.UGCPolicy().SanitizeBytes(unsafe))
 }
