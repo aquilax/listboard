@@ -240,7 +240,7 @@ func validateForm(r *http.Request, parentId int) (Node, ValidationErrors) {
 		ParentId: parentId,
 		Title:    strings.TrimSpace(r.FormValue("title")),
 		Vote:     getVote(r.FormValue("vote")),
-		Tripcode: tripcode(r.FormValue("password")),
+		Tripcode: getTripcode(r.FormValue("password")),
 		Body:     r.FormValue("body"),
 	}
 	errors := ValidationErrors{}
@@ -254,8 +254,4 @@ func validateForm(r *http.Request, parentId int) (Node, ValidationErrors) {
 		node.Rendered = renderText(node.Body)
 	}
 	return node, errors
-}
-
-func renderText(t string) template.HTML {
-	return template.HTML(t)
 }
