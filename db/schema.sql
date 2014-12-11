@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS node (
     domain_id smallint DEFAULT 0,
     title character varying(150) DEFAULT '',
     vote int DEFAULT 0,
-    tripcde character varying(10) DEFAULT '',
+    tripcode character varying(10) DEFAULT '',
     body text,
     rendered text,
     status smallint DEFAULT 1,

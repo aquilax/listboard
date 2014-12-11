@@ -1,13 +1,19 @@
 package main
 
 import (
+	"errors"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 	"html/template"
 	"time"
 )
 
-type Database struct{}
+type Model struct {
+	db *sqlx.DB
+}
 
 type SiteConfig struct {
+	DomainId    int
 	Css         string
 	Title       string
 	Description string
@@ -16,51 +22,111 @@ type SiteConfig struct {
 }
 
 type Node struct {
-	Id       int
-	ParentId int
-	DomainId int
-	Title    string
-	Vote     int
-	Tripcode string
-	Body     string
-	Rendered template.HTML
-	Status   int
-	Updated  time.Time
-	Created  time.Time
+	Id       int           `db:"id"`
+	ParentId int           `db:"parent_id"`
+	DomainId int           `db:"domain_id"`
+	Title    string        `db:"title"`
+	Vote     int           `db:"vote"`
+	Tripcode string        `db:"tripcode"`
+	Body     string        `db:"body"`
+	Rendered template.HTML `db:"rendered"`
+	Status   int           `db:"status"`
+	Created  time.Time     `db:"created"`
+	Updated  time.Time     `db:"updated"`
 }
 
 type NodeList []*Node
 
-func NewDatabase(c *Config) *Database {
-	return &Database{}
+func NewModel(c *Config) *Model {
+	return &Model{}
 }
 
-func (db *Database) getSiteConfig(token string) *SiteConfig {
+func (h HTML) Value() (driver.Value, error) {
+	return []byte(h), nil
+}
+
+func (h *HTML) Scan(src interface{}) error {
+	var source string
+	switch src.(type) {
+	case string:
+		source = src.(string)
+	case []byte:
+		source = src.(string)
+	default:
+		return errors.New("Incompatible type for HTML")
+	}
+	*h = HTML(source)
+	return nil
+}
+
+func (m *Model) Init(config *Config) error {
+	var err error
+	m.db, err = sqlx.Open(config.Database, config.Dsn)
+	return err
+}
+
+func (m *Model) getSiteConfig(token string) *SiteConfig {
 	return &SiteConfig{
-		Css: "style.css",
+		DomainId: 0,
+		Css:      "style.css",
 	}
 }
 
-func (db *Database) getChildNodes(parentNodeId, itemsPerPage, page int, orderBy string) *NodeList {
-	nl := &NodeList{
-		db.getNode(0),
-		db.getNode(1),
-	}
+func (m *Model) getChildNodes(parentNodeId, itemsPerPage, page int, orderBy string) *NodeList {
+	nl := &NodeList{}
 	return nl
 }
 
-func (db *Database) getNode(listId int) *Node {
-	return &Node{
-		Id:       listId,
-		Title:    "Test item",
-		Tripcode: "triptitrip",
-		Vote:     3,
-		Rendered: "<p>Rendered</p>",
-		Updated:  time.Now(),
-		Created:  time.Now(),
-	}
+func (m *Model) getNode(listId int) (*Node, error) {
+	var node Node
+	err := m.db.Get(&node, "SELECT * FROM node WHERE id=$1", listId)
+	return &node, err
 }
 
-func (db *Database) addNode(node *Node) (int, error) {
-	return 0, nil
+func (m *Model) mustGetNode(listId int) *Node {
+	node, err := m.getNode(listId)
+	if err != nil {
+		panic(err)
+	}
+	return node
+}
+
+func (m *Model) addNode(node *Node) (int, error) {
+	_, err := m.db.NamedExec(`INSERT INTO node (
+			parent_id,
+			domain_id,
+			title,
+			vote,
+			tripcode,
+			body,
+			rendered,
+			status,
+			created,
+			updated
+		) VALUES (
+			:parent_id,
+			:domain_id,
+			:title,
+			:vote,
+			:tripcode,
+			:body,
+			:rendered,
+			:status,
+			:created,
+			:updated
+  		)`,
+		map[string]interface{}{
+			"parent_id": node.ParentId,
+			"domain_id": node.DomainId,
+			"title":     node.Title,
+			"vote":      node.Vote,
+			"tripcode":  node.Tripcode,
+			"body":      node.Body,
+			"rendered":  string(node.Rendered),
+			"status":    1,
+			"created":   time.Now(),
+			"updated":   time.Now(),
+		})
+
+	return 0, err
 }

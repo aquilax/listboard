@@ -21,8 +21,8 @@ func hfSlug(s string) string {
 	return slug.Make(s) + ".html"
 }
 
-func getTripcode(t string) string {
-	return tripcode.Tripcode(t)
+func getTripcode(s string) string {
+	return tripcode.Tripcode(s)
 }
 
 func getVote(t string) int {
@@ -44,6 +44,5 @@ func inHoneypot(t string) bool {
 
 func renderText(t string) template.HTML {
 	unsafe := blackfriday.MarkdownCommon([]byte(t))
-	html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
-	return template.HTML(html)
+	return template.HTML(bluemonday.UGCPolicy().SanitizeBytes(unsafe))
 }
