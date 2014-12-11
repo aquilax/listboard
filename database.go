@@ -18,11 +18,13 @@ type SiteConfig struct {
 type Node struct {
 	Id       int
 	ParentId int
+	DomainId int
 	Title    string
 	Vote     int
 	Tripcode string
 	Body     string
 	Rendered template.HTML
+	Status   int
 	Updated  time.Time
 	Created  time.Time
 }
