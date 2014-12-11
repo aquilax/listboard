@@ -90,7 +90,7 @@ func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	sc := l.m.getSiteConfig("token")
 	data := NewTemplateData(sc)
-	data["Lists"] = l.m.getChildNodes(0, itemsPerPage, page, "updated")
+	data["Lists"] = l.m.mustGetChildNodes(0, itemsPerPage, page, "updated")
 	render(&data, w, r, "templates/layout.html", "templates/index.html")
 }
 
@@ -149,7 +149,7 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 	data["Errors"] = errors
 	data["Form"] = node
 	data["List"] = l.m.mustGetNode(listId)
-	data["Items"] = l.m.getChildNodes(listId, itemsPerPage, 0, "votes")
+	data["Items"] = l.m.mustGetChildNodes(listId, itemsPerPage, 0, "vote")
 	render(&data, w, r, "templates/layout.html", "templates/list.html", "templates/form.html")
 }
 
@@ -189,7 +189,7 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 	data["Form"] = node
 	data["List"] = l.m.mustGetNode(listId)
 	data["Item"] = l.m.mustGetNode(itemId)
-	data["Items"] = l.m.getChildNodes(itemId, itemsPerPage, 0, "created")
+	data["Items"] = l.m.mustGetChildNodes(itemId, itemsPerPage, 0, "created")
 	render(&data, w, r, "templates/layout.html", "templates/vote.html", "templates/form.html")
 }
 
@@ -202,7 +202,7 @@ func (l *Listboard) feedHandler(w http.ResponseWriter, r *http.Request) {
 		Author:      &Author{sc.AuthorName, sc.AuthorEmail},
 		Created:     time.Now(),
 	}
-	nodes := l.m.getChildNodes(0, 20, 0, "created")
+	nodes := l.m.mustGetChildNodes(0, 20, 0, "created")
 	for _, node := range *nodes {
 		feed.Items = append(feed.Items, &Item{
 			Title:       node.Title,
@@ -224,7 +224,7 @@ func (l *Listboard) feedAlllHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (l *Listboard) sitemapHandler(w http.ResponseWriter, r *http.Request) {
-	nodes := l.m.getChildNodes(0, 1000, 0, "created")
+	nodes := l.m.mustGetChildNodes(0, 1000, 0, "created")
 	var urlSet sitemap.URLSet
 	for _, node := range *nodes {
 		urlSet.URLs = append(urlSet.URLs, sitemap.URL{

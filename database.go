@@ -34,7 +34,7 @@ type Node struct {
 	Updated  time.Time `db:"updated"`
 }
 
-type NodeList []*Node
+type NodeList []Node
 
 func NewModel(c *Config) *Model {
 	return &Model{}
@@ -57,8 +57,17 @@ func (m *Model) getSiteConfig(token string) *SiteConfig {
 	}
 }
 
-func (m *Model) getChildNodes(parentNodeId, itemsPerPage, page int, orderBy string) *NodeList {
-	nl := &NodeList{}
+func (m *Model) getChildNodes(parentNodeId, itemsPerPage, page int, orderBy string) (*NodeList, error) {
+	var nl NodeList
+	err := m.db.Select(&nl, "SELECT * FROM node WHERE parent_id=? ORDER BY " + orderBy + " LIMIT ?, ?", parentNodeId, page, itemsPerPage)
+	return &nl, err
+}
+
+func (m *Model) mustGetChildNodes(parentNodeId, itemsPerPage, page int, orderBy string) *NodeList {
+	nl, err := m.getChildNodes(parentNodeId, itemsPerPage, page, orderBy)
+	if err != nil {
+		panic(err)
+	}
 	return nl
 }
 
