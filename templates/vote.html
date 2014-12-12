@@ -2,33 +2,33 @@
 <h2>{{ lang "Vote" }}</h2>
 
 <h3 id="{{.List.Id}}"><a href="/list/{{.List.Id}}/{{slug .List.Title}}">{{.List.Title}}</a></h3>
+{{.List.GetRendered}}
 <p>
 	{{if .List.Tripcode}} [<b>{{.List.Tripcode}}</b>]{{end}}
 	<em>{{ time .List.Created }}</em> 
 <p>
-{{.List.GetRendered}}
 <hr />
 	<ol>
 		<li>
 			<h3 id="{{.Item.Id}}"><a href="/list/{{.List.Id}}/{{slug .List.Title}}#I{{.Item.Id}}">{{.Item.Title}}</a></h3>
+			{{.Item.GetRendered}}
 			<p>
 				{{if .Item.Tripcode}} [<b>{{.Item.Tripcode}}</b>]{{end}}
 				<em>{{ time .Item.Created }}</em> |
 				{{lang "rating"}}: <b>{{.Item.Vote}}</b>
 			</p>
-			{{.Item.GetRendered}}
 			<hr />
 			{{if .Items}}
 			<ol>
 			{{range $i, $item := .Items}}
 				<li>
 					<h4 id="I{{$item.Id}}">{{$item.Title}} <a href="/list/{{$.List.Id}}/{{$.Item.Id}}/vote.html#I{{$item.Id}}">#{{$item.Id}}</a></h4>
+					{{$item.GetRendered}}
 					<p>
 						{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>]{{end}}
 						<em>{{ time $item.Created }}</em> |
 						{{lang "rating"}}: <b>{{$item.Vote}}</b>
 					</p>
-					{{$item.GetRendered}}
 					<hr/>
 				</li>
 			{{end}}

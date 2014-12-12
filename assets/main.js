@@ -25,51 +25,41 @@ function upload(file) {
 	xhr.send(fd);
 }
 
-function quote() {
-	var textComponent = document.getElementById('textarea'),
-		text = textComponent.value,
-		startPos = textComponent.selectionStart,
-		endPos = textComponent.selectionEnd,
-		selLenght,
-		segment,
-		newSegment = [];
-	if (startPos != undefined) {
-		selLength = endPos - startPos;
-		segment = text.substr(startPos, selLength);
-		segment.split("\n").forEach(function(row) {
-			newSegment.push("> " + row);
-		});
-		textComponent.value = [
-			text.substr(0, startPos),
-			newSegment.join("\n"),
-			text.substr(endPos)
-		].join("\n");
+function youtube() {
+	var re = /youtube\.com\/watch\?.*v=(.+?)(&|$)/
+	var links = document.getElementsByTagName('a');
+	var len = links.length;
+	for (var i = 0; i < len; i++) {
+		var href = links[i].href;
+		var matches = href.match(re);
+		if (matches) {
+			var videoId = matches[1];
+			var div = document.createElement('div');
+			div.className = 'youtube';
+
+			var image = document.createElement('img');
+			image.className = 'thumb'
+			image.setAttribute('src', 'http://i.ytimg.com/vi/'+videoId+'/hqdefault.jpg');
+			div.appendChild(image);
+
+			image.onclick = function() {
+
+				// Create an iFrame with autoplay set to true
+				var iframe = document.createElement("iframe");
+				iframe.setAttribute("src",
+					"https://www.youtube.com/embed/" + videoId + "?autoplay=1&autohide=1&border=0&wmode=opaque&enablejsapi=1");
+
+				// The height and width of the iFrame should be the same as parent
+				iframe.className = 'video_frame'
+				// Replace the YouTube thumbnail with YouTube HTML5 Player
+				this.parentNode.replaceChild(iframe, this);
+
+			};
+			links[i].parentElement.insertBefore(div, links[i]);
+		}
 	}
 }
-
-// Find all the YouTube video embedded on a page
-var videos = document.getElementsByClassName("youtube");
-
-for (var i = 0; i < videos.length; i++) {
-
-	var youtube = videos[i];
-	var videoId = youtube.getAttribute('data-video');
-
-	// Attach an onclick event to the YouTube Thumbnail
-	youtube.onclick = function() {
-
-		// Create an iFrame with autoplay set to true
-		var iframe = document.createElement("iframe");
-		iframe.setAttribute("src",
-			"https://www.youtube.com/embed/" + videoId + "?autoplay=1&autohide=1&border=0&wmode=opaque&enablejsapi=1");
-
-		// The height and width of the iFrame should be the same as parent
-		iframe.className = 'video_frame'
-			// Replace the YouTube thumbnail with YouTube HTML5 Player
-		this.parentNode.replaceChild(iframe, this);
-
-	};
-}
+youtube();
 
 function rsz(elem, max) {
 	if (elem == undefined || elem == null) return false;

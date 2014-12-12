@@ -159,7 +159,7 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 	data["Errors"] = errors
 	data["Form"] = node
 	data["List"] = l.m.mustGetNode(listId)
-	data["Items"] = l.m.mustGetChildNodes(listId, itemsPerPage, 0, "vote")
+	data["Items"] = l.m.mustGetChildNodes(listId, itemsPerPage, 0, "vote DESC, created")
 	render(&data, w, r, "templates/layout.html", "templates/list.html", "templates/form.html")
 }
 

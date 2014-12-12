@@ -7,12 +7,13 @@
 	<link rel="alternate" type="application/rss+xml" title="{{lang "Latest feeds"}}" href="/feed.xml">
 	<link rel="alternate" type="application/rss+xml" title="{{lang "Latest feeds"}}" href="/all.xml">
 	<link rel=stylesheet href="/assets/{{.Css}}">
-	<script src="/assets/main.js"></script>
 </head>
 <body>
 	<h1><a href="/">{{ .Title }}</a></h1>
 	<hr />
 	{{template "content" .}}
 	<hr />
-	<p>{{lang "powered by"}}: <a href="https://github.com/aquilax/listboard">Listboard</a></body>
+	<p>{{lang "powered by"}}: <a href="https://github.com/aquilax/listboard">Listboard</a>
+	<script src="/assets/main.js"></script>
+</body>
 </html>

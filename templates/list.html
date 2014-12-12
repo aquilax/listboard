@@ -1,23 +1,23 @@
 {{define "content"}}
 	<h3 id="{{.List.Id}}"><a href="/list/{{.List.Id}}/{{slug .List.Title}}">{{.List.Title}}</a></h4>
+	{{.List.GetRendered}}
 	<p>
 		{{if .List.Tripcode}} [<b>{{.List.Tripcode}}</b>]{{end}}
 		<em>{{ time .List.Created }}</em>
 	<p>
-	{{.List.GetRendered}}
 	<hr />
 	{{if .Items}}
 	<ol>
 	{{range $i, $item := .Items}}
 		<li>
 			<h4 id="I{{$item.Id}}"><a href="/list/{{$item.ParentId}}/{{$item.Id}}/vote.html">{{$item.Title}}</a> <a href="/list/{{$.List.Id}}/{{slug $.List.Title}}#I{{$item.Id}}">#{{$item.Id}}</a></h4>
+			{{$item.GetRendered}}
 			<p>
 				[<a href="/list/{{$item.ParentId}}/{{$item.Id}}/vote.html#post">{{lang "vote"}}</a>] |
 				{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>]{{end}}
 				<em>{{ time $item.Created }}</em> |
 				{{lang "rating"}}: <b>{{$item.Vote}}</b>
 			</p>
-			{{$item.GetRendered}}
 			<hr/>
 		</li>
 	{{end}}
