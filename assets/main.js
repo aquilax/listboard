@@ -15,7 +15,8 @@ function upload(file) {
 				textarea = document.getElementById('textarea'),
 				texta = textarea.value.split("\n");
 			if (data.data && data.data.link) {
-				texta.push('i' + data.data.link);
+				link = "![Image](" + data.data.link + ")";
+				texta.push(link);
 				textarea.value = texta.join("\n");
 			}
 			//document.querySelector("#link").href = JSON.parse(xhr.responseText).upload.links.imgur_page;
@@ -45,6 +46,7 @@ function quote() {
 		].join("\n");
 	}
 }
+
 // Find all the YouTube video embedded on a page
 var videos = document.getElementsByClassName("youtube");
 

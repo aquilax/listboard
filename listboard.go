@@ -13,7 +13,11 @@ import (
 )
 
 const (
-	itemsPerPage = 10
+	itemsPerPage  = 10
+	statusEnabled = 1
+	levelRoot     = iota
+	levelList
+	levelVote
 )
 
 type Listboard struct {
@@ -102,15 +106,16 @@ func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
-			node, errors = validateForm(r, sc.DomainId, 0)
+			node, errors = validateForm(r, sc.DomainId, 0, levelRoot)
 			if len(errors) == 0 {
 				// save and redirect
-				_, err := l.m.addNode(&node)
+				id, err := l.m.addNode(&node)
 				if err != nil {
 					panic(err)
 					//Internal server error
 				}
-				http.Redirect(w, r, "/", http.StatusFound)
+				url := "/list/" + strconv.Itoa(id) + "/" + hfSlug(node.Title)
+				http.Redirect(w, r, url, http.StatusFound)
 			}
 		}
 	}
@@ -136,11 +141,16 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
-			node, errors = validateForm(r, sc.DomainId, listId)
+			node, errors = validateForm(r, sc.DomainId, listId, levelList)
 			if len(errors) == 0 {
 				// save and redirect
-				l.m.addNode(&node)
-				http.Redirect(w, r, "/", http.StatusFound)
+				id, err := l.m.addNode(&node)
+				if err != nil {
+					panic(err)
+					//Internal server error
+				}
+				url := "/list/" + strconv.Itoa(listId) + "/" + hfSlug(node.Title) + "#I" + strconv.Itoa(id)
+				http.Redirect(w, r, url, http.StatusFound)
 			}
 		}
 	}
@@ -174,21 +184,31 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
-			node, errors = validateForm(r, sc.DomainId, itemId)
+			node, errors = validateForm(r, sc.DomainId, itemId, levelVote)
 			if len(errors) == 0 {
-				// save and redirect
-				l.m.addNode(&node)
-				http.Redirect(w, r, "/", http.StatusFound)
+				id, err := l.m.addNode(&node)
+				if err != nil {
+					panic(err)
+					//Internal server error
+				}
+				if err := l.m.Vote(node.Vote, id, itemId, listId); err != nil {
+					panic(err)
+					//Internal server error
+				}
+				http.Redirect(w, r, r.URL.String(), http.StatusFound)
 			}
 		}
 	}
-
 	data := NewTemplateData(sc)
 	data["ShowVote"] = true
 	data["Errors"] = errors
-	data["Form"] = node
 	data["List"] = l.m.mustGetNode(listId)
-	data["Item"] = l.m.mustGetNode(itemId)
+	item := l.m.mustGetNode(itemId)
+	data["Item"] = item
+	if len(node.Title) == 0 {
+		node.Title = hfLang("Re") + ": " + item.Title
+	}
+	data["Form"] = node
 	data["Items"] = l.m.mustGetChildNodes(itemId, itemsPerPage, 0, "created")
 	render(&data, w, r, "templates/layout.html", "templates/vote.html", "templates/form.html")
 }
@@ -243,7 +263,7 @@ func (l *Listboard) sitemapHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(xml)
 }
 
-func validateForm(r *http.Request, domainId, parentId int) (Node, ValidationErrors) {
+func validateForm(r *http.Request, domainId, parentId, level int) (Node, ValidationErrors) {
 	node := Node{
 		ParentId: parentId,
 		DomainId: domainId,
@@ -251,6 +271,8 @@ func validateForm(r *http.Request, domainId, parentId int) (Node, ValidationErro
 		Vote:     getVote(r.FormValue("vote")),
 		Tripcode: getTripcode(r.FormValue("password")),
 		Body:     r.FormValue("body"),
+		Status:   statusEnabled,
+		Level:    level,
 	}
 	errors := ValidationErrors{}
 	if len(node.Title) < 3 {
@@ -261,6 +283,10 @@ func validateForm(r *http.Request, domainId, parentId int) (Node, ValidationErro
 	}
 	if len(errors) == 0 {
 		node.Rendered = renderText(node.Body)
+	}
+	// Check again after the rendering
+	if len(node.Rendered) < 10 {
+		errors = append(errors, hfLang("Please, write something"))
 	}
 	return node, errors
 }

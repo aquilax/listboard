@@ -10,7 +10,7 @@
 <hr />
 	<ol>
 		<li>
-			<h3 id="{{.Item.Id}}"><a href="/list/{{.List.Id}}/{{slug .Item.Title}}">{{.Item.Title}}</a></h3>
+			<h3 id="{{.Item.Id}}"><a href="/list/{{.List.Id}}/{{slug .List.Title}}#I{{.Item.Id}}">{{.Item.Title}}</a></h3>
 			<p>
 				{{if .Item.Tripcode}} [<b>{{.Item.Tripcode}}</b>]{{end}}
 				<em>{{ time .Item.Created }}</em> |

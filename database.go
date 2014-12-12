@@ -30,6 +30,7 @@ type Node struct {
 	Body     string    `db:"body"`
 	Rendered string    `db:"rendered"`
 	Status   int       `db:"status"`
+	Level    int       `db:"level"`
 	Created  time.Time `db:"created"`
 	Updated  time.Time `db:"updated"`
 }
@@ -59,7 +60,7 @@ func (m *Model) getSiteConfig(token string) *SiteConfig {
 
 func (m *Model) getChildNodes(parentNodeId, itemsPerPage, page int, orderBy string) (*NodeList, error) {
 	var nl NodeList
-	err := m.db.Select(&nl, "SELECT * FROM node WHERE parent_id=? ORDER BY " + orderBy + " LIMIT ?, ?", parentNodeId, page, itemsPerPage)
+	err := m.db.Select(&nl, "SELECT * FROM node WHERE status=1 AND parent_id=? ORDER BY "+orderBy+" LIMIT ?, ?", parentNodeId, page, itemsPerPage)
 	return &nl, err
 }
 
@@ -73,7 +74,7 @@ func (m *Model) mustGetChildNodes(parentNodeId, itemsPerPage, page int, orderBy 
 
 func (m *Model) getNode(listId int) (*Node, error) {
 	var node Node
-	err := m.db.Get(&node, "SELECT * FROM node WHERE id=$1", listId)
+	err := m.db.Get(&node, "SELECT * FROM node WHERE id=$1 AND status=1", listId)
 	return &node, err
 }
 
@@ -86,7 +87,7 @@ func (m *Model) mustGetNode(listId int) *Node {
 }
 
 func (m *Model) addNode(node *Node) (int, error) {
-	_, err := m.db.NamedExec(`INSERT INTO node (
+	res, err := m.db.NamedExec(`INSERT INTO node (
 			parent_id,
 			domain_id,
 			title,
@@ -95,6 +96,7 @@ func (m *Model) addNode(node *Node) (int, error) {
 			body,
 			rendered,
 			status,
+			level,
 			created,
 			updated
 		) VALUES (
@@ -106,6 +108,7 @@ func (m *Model) addNode(node *Node) (int, error) {
 			:body,
 			:rendered,
 			:status,
+			:level,
 			:created,
 			:updated
   		)`,
@@ -117,10 +120,35 @@ func (m *Model) addNode(node *Node) (int, error) {
 			"tripcode":  node.Tripcode,
 			"body":      node.Body,
 			"rendered":  string(node.Rendered),
-			"status":    1,
+			"status":    node.Status,
+			"level":     node.Level,
 			"created":   time.Now(),
 			"updated":   time.Now(),
 		})
+	if err != nil {
+		return 0, err
+	}
+	var id int64
+	id, err = res.LastInsertId()
+	return int(id), err
+}
 
-	return 0, err
+func (m *Model) bumpVote(id, vote int) error {
+	_, err := m.db.NamedExec(`UPDATE node set vote = vote + :vote, updated = :updated WHERE id = :id`, map[string]interface{}{
+		"vote":    vote,
+		"id":      id,
+		"updated": time.Now(),
+	})
+	return err
+}
+
+func (m *Model) Vote(vote, id, itemId, listId int) error {
+	if err := m.bumpVote(itemId, vote); err != nil {
+		return err
+	}
+	// parent holds total number of votes
+	if err := m.bumpVote(listId, 1); err != nil {
+		return err
+	}
+	return nil
 }

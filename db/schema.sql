@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS node (
     tripcode character varying(10) DEFAULT '',
     body text,
     rendered text,
+    level smallint DEFAULT 0,
     status smallint DEFAULT 1,
     created timestamp,
     updated timestamp
