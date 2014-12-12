@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-func hfLang(t string) string {
-	return t
-}
-
 func hfTime(t time.Time) string {
 	return t.Format("01.02.2006 15:04")
 }

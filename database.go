@@ -4,6 +4,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"html/template"
+	"strconv"
 	"time"
 )
 
@@ -45,6 +46,17 @@ func (n *Node) GetRendered() template.HTML {
 	return template.HTML(n.Rendered)
 }
 
+func (n *Node) Url() string {
+	switch n.Level {
+	case 0:
+		return "/list/" + strconv.Itoa(n.Id) + hfSlug(n.Title)
+	case 1:
+		return "/vote/" + strconv.Itoa(n.ParentId) + strconv.Itoa(n.Id) + "/vote.html"
+	default:
+		return "/list/" + strconv.Itoa(n.Id) + hfSlug(n.Title)
+	}
+}
+
 func (m *Model) Init(config *Config) error {
 	var err error
 	m.db, err = sqlx.Open(config.Database, config.Dsn)
@@ -64,8 +76,22 @@ func (m *Model) getChildNodes(parentNodeId, itemsPerPage, page int, orderBy stri
 	return &nl, err
 }
 
+func (m *Model) getAllNodes(itemsPerPage, page int, orderBy string) (*NodeList, error) {
+	var nl NodeList
+	err := m.db.Select(&nl, "SELECT * FROM node WHERE status=1 ORDER BY "+orderBy+" LIMIT ?, ?", page, itemsPerPage)
+	return &nl, err
+}
+
 func (m *Model) mustGetChildNodes(parentNodeId, itemsPerPage, page int, orderBy string) *NodeList {
 	nl, err := m.getChildNodes(parentNodeId, itemsPerPage, page, orderBy)
+	if err != nil {
+		panic(err)
+	}
+	return nl
+}
+
+func (m *Model) mustGetAllNodes(itemsPerPage, page int, orderBy string) *NodeList {
+	nl, err := m.getAllNodes(itemsPerPage, page, orderBy)
 	if err != nil {
 		panic(err)
 	}
