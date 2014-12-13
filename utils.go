@@ -16,6 +16,10 @@ func hfSlug(s string) string {
 	return slug.Make(s) + ".html"
 }
 
+func hfMod(n int, mod int) int {
+	return n % mod
+}
+
 func getTripcode(s string) string {
 	return tripcode.Tripcode(s)
 }

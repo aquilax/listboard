@@ -1,0 +1,40 @@
+body, html{padding:0; margin:0}
+body{font-family:arial,sans-serif; background-color: #fff; font-size:10pt }
+h1{background-color: #F5F5F5; padding: .6em 10% .6em 10%; margin:0 0 .4em; border-bottom: 1px solid #E5E5E5}
+h1 a{color:#231; text-decoration:none;font-size:1.4em}
+a{color:#2200C1; text-decoration:none}
+a:hover{text-decoration:underline}
+#forum{background-color:#fff; margin: 0 10%}
+#post{background-color: #e6e6e6; margin-top: 2em; padding: 0 1.2em 1.2em 1.2em}
+#post em{color:#f00}
+#post table {width:100%}
+#post input, #post textarea{width:100%}
+#post input.radio{width:auto}
+#post label{font-weight:bold}
+#namef{display:none}
+.ar{text-align:right}
+.b{font-weight:bold}
+.error{color:#f00; font-weight:bold;}
+hr{border:none; border-top:1px solid #aeaeae}
+.tbl{width:100%; margin-bottom:2em;}
+.tbl tr.e{background-color:#F5F5F5;}
+.tbl td, .tbl th{padding:5px 10px}
+.tbl th{background:#E5E5E5; color: #000;text-align:left;}
+h2{color:#D14836; margin-bottom: .2em}
+.title{font-size: 1.2em}
+.tbl td a:visited, .topi a:visited{color:#551A8B}
+.tbl th a{color:#000}
+.topic{background-color:#fff;border: 1px solid #ddd; margin: 1em 0}
+
+.topic h3{color:#D14836; padding: .4em 0; margin:0}
+.topi{padding:0}
+.topi blockquote{background-color:#f5f5f5; padding:1em;border: 1px dashed #bfbf8f}
+.social{float:right;}
+.meta{background:#E6E6E6; padding: .4em;}
+.txt{font-family: Verdana, Georgia, "Trebuchet MS", Arial, Serif;font-size: 14px; padding: 0 1em}
+.fr{float:right}
+.tbl th a.new_topic{color: #f00;}
+.thumb{cursor: pointer;}
+.video_frame{border:none; width:560px; height:315px;}
+pre{background: #efefef;padding: 1em;border: 1px solid #cecece;overflow-x: auto;}
+ul{list-style: none;}

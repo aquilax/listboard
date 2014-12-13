@@ -8,9 +8,9 @@
 	<em>{{ time .List.Created }}</em> 
 </p>
 <hr />
-	<ol>
+	<ul>
 		<li>
-			<h3 id="{{.Item.Id}}"><a href="/list/{{.List.Id}}/{{slug .List.Title}}#I{{.Item.Id}}">{{.Item.Title}}</a></h3>
+			<h3 id="{{.Item.Id}}">{{.Item.Title}} <a href="/vote/{{.Item.Id}}/{{slug .Item.Title}}">#{{.Item.Id}}</a></h3>
 			{{.Item.GetRendered}}
 			<p>
 				{{if .Item.Tripcode}} [<b>{{.Item.Tripcode}}</b>]{{end}}
@@ -22,7 +22,7 @@
 			<ol>
 			{{range $i, $item := .Items}}
 				<li>
-					<h4 id="I{{$item.Id}}">{{$item.Title}} <a href="/list/{{$.List.Id}}/{{$.Item.Id}}/vote.html#I{{$item.Id}}">#{{$item.Id}}</a></h4>
+					<h4 id="I{{$item.Id}}">{{$item.Title}} <a href="/vote/{{$.Item.Id}}/{{slug $.Item.Title}}#I{{$item.Id}}">#{{$item.Id}}</a></h4>
 					{{$item.GetRendered}}
 					<p>
 						{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>]{{end}}
@@ -35,6 +35,6 @@
 			</ol>
 			{{end}}
 		</li>
-	</ol>
+	</ul>
 {{template "form" .}}
 {{end}}

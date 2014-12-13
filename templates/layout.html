@@ -3,17 +3,33 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>{{.Title}}</title>
+	<title>{{if .Subtitle}}{{.Subtitle}}: {{end}}{{.Title}}</title>
 	<link rel="alternate" type="application/rss+xml" title="{{lang "Latest lists"}}" href="/feed.xml">
 	<link rel="alternate" type="application/rss+xml" title="{{lang "Latest all"}}" href="/all.xml">
 	<link rel=stylesheet href="/assets/{{.Css}}">
 </head>
 <body>
 	<h1><a href="/">{{ .Title }}</a></h1>
-	<hr />
-	{{template "content" .}}
-	<hr />
-	<p>{{lang "powered by"}}: <a href="https://github.com/aquilax/listboard">Listboard</a>
+	<div id="forum">
+		{{template "path" .Path }}
+		{{template "content" .}}
+		<hr/>
+		<p class="ar">{{lang "powered by"}}: <a href="https://github.com/aquilax/listboard">Listboard</a>
+	</div>
 	<script src="/assets/main.js"></script>
 </body>
 </html>
+{{define "path"}}
+{{ if .}}
+	<div id="path" itemprop="breadcrumb">
+	{{ range . }}
+		{{ if .Url }}
+			<a href="{{ .Url }}">{{ html .Label }}</a> &raquo;
+		{{ else }}
+			{{ html .Label }}
+		{{ end }}
+	{{ end }}
+	</div>
+	<hr/>
+{{ end }}
+{{end}}

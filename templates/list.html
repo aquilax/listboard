@@ -1,5 +1,5 @@
 {{define "content"}}
-	<h3 id="{{.List.Id}}"><a href="/list/{{.List.Id}}/{{slug .List.Title}}">{{.List.Title}}</a></h4>
+	<h3 id="{{.List.Id}}">{{.List.Title}} <a href="/list/{{.List.Id}}/{{slug .List.Title}}">#{{.List.Id}}</a></h4>
 	{{.List.GetRendered}}
 	<p>
 		{{if .List.Tripcode}} [<b>{{.List.Tripcode}}</b>]{{end}}
@@ -10,10 +10,9 @@
 	<ol>
 	{{range $i, $item := .Items}}
 		<li>
-			<h4 id="I{{$item.Id}}"><a href="/list/{{$item.ParentId}}/{{$item.Id}}/vote.html">{{$item.Title}}</a> <a href="/list/{{$.List.Id}}/{{slug $.List.Title}}#I{{$item.Id}}">#{{$item.Id}}</a></h4>
+			<h4 id="I{{$item.Id}}"><a href="/vote/{{$item.Id}}/{{slug $item.Title}}">{{$item.Title}}</a> <a href="/list/{{$.List.Id}}/{{slug $.List.Title}}#I{{$item.Id}}">#{{$item.Id}}</a></h4>
 			{{$item.GetRendered}}
 			<p>
-				[<a href="/list/{{$item.ParentId}}/{{$item.Id}}/vote.html#post">{{lang "vote"}}</a>] |
 				{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>]{{end}}
 				<em>{{ time $item.Created }}</em> |
 				{{lang "rating"}}: <b>{{$item.Vote}}</b>
@@ -23,6 +22,5 @@
 	{{end}}
 	</ol>
 	{{end}}
-	<h2>{{ lang "New suggestion" }}</h2>
 	{{template "form" .}}
 {{end}}

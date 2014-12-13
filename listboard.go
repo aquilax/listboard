@@ -52,10 +52,10 @@ func (l *Listboard) Run(args []string) {
 
 	r.HandleFunc("/add.html", http.HandlerFunc(l.addFormHandler)).Methods("GET", "POST")
 	r.HandleFunc("/list/{listId}/{slug}", http.HandlerFunc(l.listHandler)).Methods("GET", "POST")
-	r.HandleFunc("/list/{listId}/{itemId}/vote.html", http.HandlerFunc(l.voteHandler)).Methods("GET", "POST")
+	r.HandleFunc("/vote/{itemId}/{slug}", http.HandlerFunc(l.voteHandler)).Methods("GET", "POST")
 
 	// Static assets
-	r.PathPrefix("/assets").Handler(http.FileServer(http.Dir("./")))
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public_html")))
 
 	http.Handle("/", r)
 
@@ -108,6 +108,9 @@ func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) {
 	s := NewSession(sc, tr)
 	s.Set("Errors", errors)
 	s.Set("Form", node)
+	s.AddPath("/", s.Lang("Home"))
+	s.AddPath("", s.Lang("New list"))
+	s.Set("Subtitle", s.Lang("New list"))
 	s.render(w, r, "templates/layout.html", "templates/add.html", "templates/form.html")
 }
 
@@ -145,22 +148,21 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 
 	s.Set("Errors", errors)
 	s.Set("Form", node)
-	s.Set("List", l.m.mustGetNode(listId))
+	list := l.m.mustGetNode(listId)
+	s.Set("List", list)
 	s.Set("Items", l.m.mustGetChildNodes(listId, itemsPerPage, 0, "vote DESC, created"))
+	s.Set("FormTitle", s.Lang("New suggestion"))
+	s.Set("Subtitle", list.Title)
+	s.AddPath("/", s.Lang("Home"))
+	s.AddPath("", list.Title)
 	s.render(w, r, "templates/layout.html", "templates/list.html", "templates/form.html")
 }
 
 func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	listId, err := strconv.Atoi(vars["listId"])
-	if err != nil {
-		log.Printf("%d is not a valid list number", listId)
-		http.Error(w, "Not found", http.StatusNotFound)
-		return
-	}
 	itemId, err := strconv.Atoi(vars["itemId"])
 	if err != nil {
-		log.Printf("%d is not a valid item number", listId)
+		log.Printf("%d is not a valid item number", itemId)
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
@@ -168,6 +170,7 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 	tr := l.tp.Get(sc.Language)
 	var errors ValidationErrors
 	var node Node
+	item := l.m.mustGetNode(itemId)
 
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
@@ -179,26 +182,31 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 					panic(err)
 					return
 				}
-				if err := l.m.Vote(node.Vote, id, itemId, listId); err != nil {
+				if err := l.m.Vote(node.Vote, id, itemId, item.ParentId); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					panic(err)
 					return
 				}
-				http.Redirect(w, r, r.URL.String(), http.StatusFound)
+				http.Redirect(w, r, r.URL.String()+"#I"+strconv.Itoa(id), http.StatusFound)
 			}
 		}
 	}
 	s := NewSession(sc, tr)
+	s.Set("Subtitle", item.Title)
 	s.Set("ShowVote", true)
 	s.Set("Errors", errors)
-	s.Set("List", l.m.mustGetNode(listId))
-	item := l.m.mustGetNode(itemId)
+	list := l.m.mustGetNode(item.ParentId)
+	s.Set("List", list)
 	s.Set("Item", item)
 	if len(node.Title) == 0 {
 		node.Title = s.Lang("Re") + ": " + item.Title
 	}
 	s.Set("Form", node)
 	s.Set("Items", l.m.mustGetChildNodes(itemId, itemsPerPage, 0, "created"))
+	s.Set("FormTitle", s.Lang("New vote"))
+	s.AddPath("/", s.Lang("Home"))
+	s.AddPath("/list/"+strconv.Itoa(list.Id)+"/"+hfSlug(list.Title), list.Title)
+	s.AddPath("", item.Title)
 	s.render(w, r, "templates/layout.html", "templates/vote.html", "templates/form.html")
 }
 
@@ -276,13 +284,12 @@ func (l *Listboard) validateForm(r *http.Request, domainId, parentId, level int,
 	}
 	if len(node.Body) < 10 {
 		errors = append(errors, ln.Lang("Please, write something"))
-	}
-	if len(errors) == 0 {
+	} else {
 		node.Rendered = renderText(node.Body)
-	}
-	// Check again after the rendering
-	if len(node.Rendered) < 10 {
-		errors = append(errors, ln.Lang("Please, write something"))
+		// Check again after the rendering
+		if len(node.Rendered) < 10 {
+			errors = append(errors, ln.Lang("Please, write something"))
+		}
 	}
 	return node, errors
 }

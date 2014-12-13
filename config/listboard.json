@@ -7,7 +7,7 @@
 		"": {
 			"domain_id": "1",
 			"language": "en_US",
-			"css": "/assets/style.css",
+			"css": "style.css",
 			"title": "Default site",
 			"description": "This is the default listboard site",
 			"author_name": "Examle Author",

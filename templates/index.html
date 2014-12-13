@@ -1,12 +1,20 @@
 {{define "content"}}
-	<div id="cmd">[<a href="/add.html">{{lang "new list"}}</a>]</div>
-	<ul>
-	{{range $i, $item := .Lists}}
-		<li>
-			<a href="list/{{$item.Id}}/{{slug $item.Title}}">{{$item.Title}}</a> |
-			{{lang "votes"}}: <b>{{$item.Vote}}</b> |
-			<em>{{ time $item.Updated }}</em>
-		</li>
-	{{end}}
-	</ul>
+	<table class="tbl">
+		<thead>
+			<tr>
+				<th>{{lang "Name"}}</th>
+				<th style="width:50px;text-align:right">{{lang "Votes"}}</th>
+				<th style="width:150px;text-align:right">[ <a href="/add.html" rel="nofollow" class="new_topic">{{lang "new list"}}</a> ]</th>
+			</tr>
+		</thead>
+		<tbody>
+			{{range $i, $item := .Lists}}
+			{{ if mod $i 2 }}<tr>{{ else }}<tr class="e">{{ end }}
+				<td><a href="list/{{$item.Id}}/{{slug $item.Title}}" class="title">{{$item.Title}}</a></td>
+				<td class="ar">{{$item.Vote}}</td>
+				<td class="ar">{{ time $item.Updated }}</td>
+			</tr>
+			{{end}}
+		</tbody>
+	</table>
 {{end}}
