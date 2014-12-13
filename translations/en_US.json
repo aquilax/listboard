@@ -5,6 +5,7 @@
 	"Latest all": "Latest all",
 	"Latest lists": "Latest lists",
 	"Mandatory": "Mandatory",
+	"Name": "Name",
 	"new list": "new list",
 	"New list": "New list",
 	"New suggestion": "New suggestion",
@@ -18,5 +19,6 @@
 	"Up": "Up",
 	"votes": "votes",
 	"vote": "vote",
-	"Vote": "Vote"
+	"Vote": "Vote",
+	"Votes": "Votes"
 }
