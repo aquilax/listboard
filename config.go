@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 )
 
@@ -36,9 +37,10 @@ func NewConfig() *Config {
 
 func (c *Config) Load(args []string) error {
 	fileName := defaultConfigFile
-	if len(args) > 2 {
+	if len(args) > 1 {
 		fileName = args[1]
 	}
+	log.Printf("Loading config from %s", fileName)
 	file, err := os.Open(fileName)
 	if err != nil {
 		return err
