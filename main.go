@@ -1,5 +1,7 @@
 package main
 
+import "os"
+
 func main() {
-	NewListboard().Run()
+	NewListboard().Run(os.Args)
 }

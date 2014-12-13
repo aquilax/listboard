@@ -4,7 +4,6 @@ import (
 	. "github.com/gorilla/feeds"
 	"github.com/gorilla/mux"
 	"github.com/sourcegraph/sitemap"
-	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -21,47 +20,29 @@ const (
 )
 
 type Listboard struct {
-	config  *Config
-	m       *Model
-	helpers template.FuncMap
+	config *Config
+	m      *Model
+	tp     *TransPool
 }
 
-type TemplateData map[string]interface{}
 type ValidationErrors []string
 
 func NewListboard() *Listboard {
 	return &Listboard{}
 }
 
-func NewTemplateData(sc *SiteConfig) TemplateData {
-	td := make(TemplateData)
-	td["Title"] = "Title is not defined"
-	td["ShowVote"] = false
-	td["Css"] = sc.Css
-	return td
-}
-
-func (l *Listboard) render(data *TemplateData, w http.ResponseWriter, r *http.Request, filenames ...string) {
-	t := template.New("layout.html")
-	t.Funcs(l.helpers)
-	if err := template.Must(t.ParseFiles(filenames...)).Execute(w, data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func (l *Listboard) Run() {
+func (l *Listboard) Run(args []string) {
+	var err error
 	l.config = NewConfig()
-	l.m = NewModel(l.config)
-	l.helpers = template.FuncMap{
-		"lang": l.lang,
-		"time": hfTime,
-		"slug": hfSlug,
-	}
-
-	err := l.m.Init(l.config)
-	if err != nil {
+	if err = l.config.Load(args); err != nil {
 		panic(err)
 	}
+	l.m = NewModel(l.config)
+	if err = l.m.Init(l.config); err != nil {
+		panic(err)
+	}
+	l.tp = NewTransPool(l.config.TranslationsBasePath)
+
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", http.HandlerFunc(l.indexHandler)).Methods("GET")
@@ -75,8 +56,10 @@ func (l *Listboard) Run() {
 
 	// Static assets
 	r.PathPrefix("/assets").Handler(http.FileServer(http.Dir("./")))
+
 	http.Handle("/", r)
 
+	log.Printf("Starting server at %s", l.config.Server)
 	if err := http.ListenAndServe(l.config.Server, nil); err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
@@ -93,21 +76,22 @@ func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) {
 			page = 0
 		}
 	}
-	sc := l.m.getSiteConfig("token")
-	data := NewTemplateData(sc)
-	data["Lists"] = l.m.mustGetChildNodes(0, itemsPerPage, page, "updated")
-	l.render(&data, w, r, "templates/layout.html", "templates/index.html")
+	sc := l.config.getSiteConfig("token")
+	s := NewSession(sc, l.tp.Get(sc.Language))
+
+	s.Set("Lists", l.m.mustGetChildNodes(0, itemsPerPage, page, "updated"))
+	s.render(w, r, "templates/layout.html", "templates/index.html")
 }
 
 func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) {
-	sc := l.m.getSiteConfig("token")
+	sc := l.config.getSiteConfig("token")
 
 	var errors ValidationErrors
 	var node Node
-
+	tr := l.tp.Get(sc.Language)
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
-			node, errors = l.validateForm(r, sc.DomainId, 0, levelRoot)
+			node, errors = l.validateForm(r, sc.DomainId, 0, levelRoot, tr)
 			if len(errors) == 0 {
 				// save and redirect
 				id, err := l.m.addNode(&node)
@@ -121,11 +105,10 @@ func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
-	data := NewTemplateData(sc)
-	data["Errors"] = errors
-	data["Form"] = node
-	l.render(&data, w, r, "templates/layout.html", "templates/add.html", "templates/form.html")
+	s := NewSession(sc, tr)
+	s.Set("Errors", errors)
+	s.Set("Form", node)
+	s.render(w, r, "templates/layout.html", "templates/add.html", "templates/form.html")
 }
 
 func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
@@ -136,14 +119,15 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
-	sc := l.m.getSiteConfig("token")
+	sc := l.config.getSiteConfig("token")
+	tr := l.tp.Get(sc.Language)
 
 	var errors ValidationErrors
 	var node Node
 
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
-			node, errors = l.validateForm(r, sc.DomainId, listId, levelList)
+			node, errors = l.validateForm(r, sc.DomainId, listId, levelList, tr)
 			if len(errors) == 0 {
 				// save and redirect
 				id, err := l.m.addNode(&node)
@@ -157,13 +141,13 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	s := NewSession(sc, tr)
 
-	data := NewTemplateData(sc)
-	data["Errors"] = errors
-	data["Form"] = node
-	data["List"] = l.m.mustGetNode(listId)
-	data["Items"] = l.m.mustGetChildNodes(listId, itemsPerPage, 0, "vote DESC, created")
-	l.render(&data, w, r, "templates/layout.html", "templates/list.html", "templates/form.html")
+	s.Set("Errors", errors)
+	s.Set("Form", node)
+	s.Set("List", l.m.mustGetNode(listId))
+	s.Set("Items", l.m.mustGetChildNodes(listId, itemsPerPage, 0, "vote DESC, created"))
+	s.render(w, r, "templates/layout.html", "templates/list.html", "templates/form.html")
 }
 
 func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
@@ -180,14 +164,14 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
-	sc := l.m.getSiteConfig("token")
-
+	sc := l.config.getSiteConfig("token")
+	tr := l.tp.Get(sc.Language)
 	var errors ValidationErrors
 	var node Node
 
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
-			node, errors = l.validateForm(r, sc.DomainId, itemId, levelVote)
+			node, errors = l.validateForm(r, sc.DomainId, itemId, levelVote, tr)
 			if len(errors) == 0 {
 				id, err := l.m.addNode(&node)
 				if err != nil {
@@ -204,22 +188,22 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	data := NewTemplateData(sc)
-	data["ShowVote"] = true
-	data["Errors"] = errors
-	data["List"] = l.m.mustGetNode(listId)
+	s := NewSession(sc, tr)
+	s.Set("ShowVote", true)
+	s.Set("Errors", errors)
+	s.Set("List", l.m.mustGetNode(listId))
 	item := l.m.mustGetNode(itemId)
-	data["Item"] = item
+	s.Set("Item", item)
 	if len(node.Title) == 0 {
-		node.Title = l.lang("Re") + ": " + item.Title
+		node.Title = s.Lang("Re") + ": " + item.Title
 	}
-	data["Form"] = node
-	data["Items"] = l.m.mustGetChildNodes(itemId, itemsPerPage, 0, "created")
-	l.render(&data, w, r, "templates/layout.html", "templates/vote.html", "templates/form.html")
+	s.Set("Form", node)
+	s.Set("Items", l.m.mustGetChildNodes(itemId, itemsPerPage, 0, "created"))
+	s.render(w, r, "templates/layout.html", "templates/vote.html", "templates/form.html")
 }
 
 func (l *Listboard) feed(w http.ResponseWriter, baseURL string, nodes *NodeList) {
-	sc := l.m.getSiteConfig("token")
+	sc := l.config.getSiteConfig("token")
 	feed := &Feed{
 		Title:       sc.Title,
 		Link:        &Link{Href: baseURL},
@@ -275,7 +259,7 @@ func (l *Listboard) sitemapHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(xml)
 }
 
-func (l *Listboard) validateForm(r *http.Request, domainId, parentId, level int) (Node, ValidationErrors) {
+func (l *Listboard) validateForm(r *http.Request, domainId, parentId, level int, ln *Language) (Node, ValidationErrors) {
 	node := Node{
 		ParentId: parentId,
 		DomainId: domainId,
@@ -288,21 +272,17 @@ func (l *Listboard) validateForm(r *http.Request, domainId, parentId, level int)
 	}
 	errors := ValidationErrors{}
 	if len(node.Title) < 3 {
-		errors = append(errors, l.lang("Title must be at least 3 characters long"))
+		errors = append(errors, ln.Lang("Title must be at least 3 characters long"))
 	}
 	if len(node.Body) < 10 {
-		errors = append(errors, l.lang("Please, write something"))
+		errors = append(errors, ln.Lang("Please, write something"))
 	}
 	if len(errors) == 0 {
 		node.Rendered = renderText(node.Body)
 	}
 	// Check again after the rendering
 	if len(node.Rendered) < 10 {
-		errors = append(errors, l.lang("Please, write something"))
+		errors = append(errors, ln.Lang("Please, write something"))
 	}
 	return node, errors
-}
-
-func (l *Listboard) lang(t string) string {
-	return t
 }

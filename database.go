@@ -12,15 +12,6 @@ type Model struct {
 	db *sqlx.DB
 }
 
-type SiteConfig struct {
-	DomainId    int
-	Css         string
-	Title       string
-	Description string
-	AuthorName  string
-	AuthorEmail string
-}
-
 type Node struct {
 	Id       int       `db:"id"`
 	ParentId int       `db:"parent_id"`
@@ -61,13 +52,6 @@ func (m *Model) Init(config *Config) error {
 	var err error
 	m.db, err = sqlx.Open(config.Database, config.Dsn)
 	return err
-}
-
-func (m *Model) getSiteConfig(token string) *SiteConfig {
-	return &SiteConfig{
-		DomainId: 0,
-		Css:      "style.css",
-	}
 }
 
 func (m *Model) getChildNodes(parentNodeId, itemsPerPage, page int, orderBy string) (*NodeList, error) {

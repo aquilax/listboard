@@ -1,0 +1,18 @@
+{
+	"server": ":8080",
+	"database": "sqlite3",
+	"dsn": "./db/test.sqlite",
+	"servers": {
+		"": {
+			"domain_id": "1",
+			"lang": "en",
+			"css": "/assets/style.css",
+			"title": "Default site",
+			"description": "This is the default listboard site",
+			"author_name": "Examle Author",
+			"author_email": "Example Email",
+			"post_header": "",
+			"pre_footer": ""
+		}
+	}
+}
