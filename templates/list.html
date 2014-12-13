@@ -1,26 +1,38 @@
 {{define "content"}}
-	<h3 id="{{.List.Id}}">{{.List.Title}} <a href="/list/{{.List.Id}}/{{slug .List.Title}}">#{{.List.Id}}</a></h4>
-	{{.List.GetRendered}}
-	<p>
-		{{if .List.Tripcode}} [<b>{{.List.Tripcode}}</b>]{{end}}
-		<em>{{ time .List.Created }}</em>
-	<p>
+	<div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
+		<div class="article">
+			<h3 itemprop="name" id="{{.List.Id}}">{{.List.Title}} <a class="ref" href="/list/{{.List.Id}}/{{slug .List.Title}}">#{{.List.Id}}</a></h4>
+			<div class="txt" itemprop="articleBody">
+				{{.List.GetRendered}}
+			</div>
+		</div>
+		<div class="meta ar">
+			{{if .List.Tripcode}} [<b>{{.List.Tripcode}}</b>]{{end}}
+			<em>{{ time .List.Created }}</em>
+		</div>
+	</div>
 	<hr />
 	{{if .Items}}
-	<ol>
+	<ul>
 	{{range $i, $item := .Items}}
 		<li>
-			<h4 id="I{{$item.Id}}"><a href="/vote/{{$item.Id}}/{{slug $item.Title}}">{{$item.Title}}</a> <a href="/list/{{$.List.Id}}/{{slug $.List.Title}}#I{{$item.Id}}">#{{$item.Id}}</a></h4>
-			{{$item.GetRendered}}
-			<p>
-				{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>]{{end}}
-				<em>{{ time $item.Created }}</em> |
-				{{lang "rating"}}: <b>{{$item.Vote}}</b>  [ <a href="/vote/{{$item.Id}}/{{slug $item.Title}}#post">{{lang "vote"}}</a> ]
-			</p>
-			<hr/>
+			<div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
+				<div class="article">
+					<h4 id="I{{$item.Id}}">{{$item.Title}} <a class="ref" href="/list/{{$.List.Id}}/{{slug $.List.Title}}#I{{$item.Id}}">#{{$item.Id}}</a></h4>
+					<div class="txt" itemprop="articleBody">
+						{{$item.GetRendered}}
+					</div>
+				</div>
+				<div class="meta ar">
+					{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>]{{end}}
+					[ <a href="/vote/{{$item.Id}}/{{slug $item.Title}}#post">{{lang "vote"}}</a> ]
+					{{lang "rating"}}: <b>{{$item.Vote}}</b> |
+					<em>{{ time $item.Created }}</em>
+				</div>
+			</div>
 		</li>
 	{{end}}
-	</ol>
+	</ul>
 	{{end}}
 	{{template "form" .}}
 {{end}}

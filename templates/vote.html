@@ -1,38 +1,53 @@
 {{define "content"}}
-<h2>{{ lang "Vote" }}</h2>
+	<h2>{{ lang "Vote" }}</h2>
 
-<h3 id="{{.List.Id}}"><a href="/list/{{.List.Id}}/{{slug .List.Title}}">{{.List.Title}}</a></h3>
-{{.List.GetRendered}}
-<p>
-	{{if .List.Tripcode}} [<b>{{.List.Tripcode}}</b>]{{end}}
-	<em>{{ time .List.Created }}</em> 
-</p>
-<hr />
+	<div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
+		<div class="article">
+			<h3 id="{{.List.Id}}"><a href="/list/{{.List.Id}}/{{slug .List.Title}}">{{.List.Title}}</a></h3>
+			<div class="txt" itemprop="articleBody">
+				{{.List.GetRendered}}
+			</div>
+		</div>
+		<div class="meta ar">
+			{{if .List.Tripcode}} [<b>{{.List.Tripcode}}</b>]{{end}}
+			<em>{{ time .List.Created }}</em> 
+		</div>
+	</div>
 	<ul>
 		<li>
-			<h3 id="{{.Item.Id}}">{{.Item.Title}} <a href="/vote/{{.Item.Id}}/{{slug .Item.Title}}">#{{.Item.Id}}</a></h3>
-			{{.Item.GetRendered}}
-			<p>
-				{{if .Item.Tripcode}} [<b>{{.Item.Tripcode}}</b>]{{end}}
-				<em>{{ time .Item.Created }}</em> |
-				{{lang "rating"}}: <b>{{.Item.Vote}}</b>
-			</p>
-			<hr />
+			<div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
+				<div class="article">
+					<h3 id="{{.Item.Id}}">{{.Item.Title}} <a class="ref" href="/vote/{{.Item.Id}}/{{slug .Item.Title}}">#{{.Item.Id}}</a></h3>
+					<div class="txt" itemprop="articleBody">
+						{{.Item.GetRendered}}
+					</div>
+				</div>
+				<div class="meta ar">
+					{{if .Item.Tripcode}} [<b>{{.Item.Tripcode}}</b>]{{end}}
+					<em>{{ time .Item.Created }}</em> |
+					{{lang "rating"}}: <b>{{.Item.Vote}}</b>
+				</div>
+			</div>
 			{{if .Items}}
-			<ol>
+			<ul>
 			{{range $i, $item := .Items}}
 				<li>
-					<h4 id="I{{$item.Id}}">{{$item.Title}} <a href="/vote/{{$.Item.Id}}/{{slug $.Item.Title}}#I{{$item.Id}}">#{{$item.Id}}</a></h4>
-					{{$item.GetRendered}}
-					<p>
-						{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>]{{end}}
-						<em>{{ time $item.Created }}</em> |
-						{{lang "rating"}}: <b>{{$item.Vote}}</b>
-					</p>
-					<hr/>
+					<div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
+						<div class="article">
+							<h4 id="I{{$item.Id}}">{{$item.Title}} <a class="ref" href="/vote/{{$.Item.Id}}/{{slug $.Item.Title}}#I{{$item.Id}}">#{{$item.Id}}</a></h4>
+							<div class="txt" itemprop="articleBody">
+								{{$item.GetRendered}}
+							</div>
+						</div>
+						<div class="meta ar">
+							{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>]{{end}}
+							<em>{{ time $item.Created }}</em> |
+							{{lang "rating"}}: <b>{{$item.Vote}}</b>
+						</div>
+					</div>
 				</li>
 			{{end}}
-			</ol>
+			</ul>
 			{{end}}
 		</li>
 	</ul>

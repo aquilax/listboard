@@ -80,7 +80,7 @@ func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	sc := l.config.getSiteConfig(l.getToken(r))
 	s := NewSession(sc, l.tp.Get(sc.Language))
-
+	s.AddPath("", s.Lang("Home"))
 	s.Set("Lists", l.m.mustGetChildNodes(sc.DomainId, 0, itemsPerPage, page, "updated"))
 	s.render(w, r, "templates/layout.html", "templates/index.html")
 }
