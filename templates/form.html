@@ -3,7 +3,7 @@
 		{{.Errors}}
 	{{end}}
 	<form id="post" method="post">
-		<div id="namef">Leaf thiz fild aloun <input type="text" name="name" value="" id="namef" /></div>
+		<div id="namef">Leaf thiz fild aloun <input type="text" name="name" value="" id="name" /></div>
 		<table>
 			<tr>
 				<td colspan="2">
@@ -26,7 +26,6 @@
 			<tr>
 				<td colspan="2">
     				<button type="button" tabindex="-1" onclick="document.getElementById('imageUpload').click();return false;">{{lang "Image"}}</button>
-    				<button type="button" tabindex="-1" onclick="quote();return false;">{{lang "Quote"}}</button>
     				<input id="imageUpload" style="visibility: collapse; width: 0px;" type="file" onchange="upload(this.files[0])">  
   				</td>
   			</tr> 
@@ -38,7 +37,7 @@
 			<tr>
 				<td>
 					<label for="password">{{lang "Optional tripcode password"}}</label><br />
-					<input type="passwerd" name="password" size="60" id="password" />
+					<input type="password" name="password" size="60" id="password" />
 				</td>
 				<td valign="bottom" width="100px">
 					<button name="post" onclick="this.disabled=true;this.form.submit()">{{ lang "Submit" }}</button>

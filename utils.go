@@ -5,13 +5,8 @@ import (
 	"github.com/gosimple/slug"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday"
-	"html/template"
 	"time"
 )
-
-func hfLang(t string) string {
-	return t
-}
 
 func hfTime(t time.Time) string {
 	return t.Format("01.02.2006 15:04")
@@ -21,8 +16,8 @@ func hfSlug(s string) string {
 	return slug.Make(s) + ".html"
 }
 
-func getTripcode(t string) string {
-	return tripcode.Tripcode(t)
+func getTripcode(s string) string {
+	return tripcode.Tripcode(s)
 }
 
 func getVote(t string) int {
@@ -42,8 +37,7 @@ func inHoneypot(t string) bool {
 	return false
 }
 
-func renderText(t string) template.HTML {
+func renderText(t string) string {
 	unsafe := blackfriday.MarkdownCommon([]byte(t))
-	html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
-	return template.HTML(html)
+	return string(bluemonday.UGCPolicy().SanitizeBytes(unsafe))
 }
