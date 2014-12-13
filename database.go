@@ -54,42 +54,42 @@ func (m *Model) Init(config *Config) error {
 	return err
 }
 
-func (m *Model) getChildNodes(parentNodeId, itemsPerPage, page int, orderBy string) (*NodeList, error) {
+func (m *Model) getChildNodes(domainId, parentNodeId, itemsPerPage, page int, orderBy string) (*NodeList, error) {
 	var nl NodeList
-	err := m.db.Select(&nl, "SELECT * FROM node WHERE status=1 AND parent_id=? ORDER BY "+orderBy+" LIMIT ?, ?", parentNodeId, page, itemsPerPage)
+	err := m.db.Select(&nl, "SELECT * FROM node WHERE domain_id = ? AND status=1 AND parent_id=? ORDER BY "+orderBy+" LIMIT ?, ?", domainId, parentNodeId, page, itemsPerPage)
 	return &nl, err
 }
 
-func (m *Model) getAllNodes(itemsPerPage, page int, orderBy string) (*NodeList, error) {
+func (m *Model) getAllNodes(domainId, itemsPerPage, page int, orderBy string) (*NodeList, error) {
 	var nl NodeList
-	err := m.db.Select(&nl, "SELECT * FROM node WHERE status=1 ORDER BY "+orderBy+" LIMIT ?, ?", page, itemsPerPage)
+	err := m.db.Select(&nl, "SELECT * FROM node WHERE domain_id = ? status=1 ORDER BY "+orderBy+" LIMIT ?, ?", domainId, page, itemsPerPage)
 	return &nl, err
 }
 
-func (m *Model) mustGetChildNodes(parentNodeId, itemsPerPage, page int, orderBy string) *NodeList {
-	nl, err := m.getChildNodes(parentNodeId, itemsPerPage, page, orderBy)
+func (m *Model) mustGetChildNodes(domainId, parentNodeId, itemsPerPage, page int, orderBy string) *NodeList {
+	nl, err := m.getChildNodes(domainId, parentNodeId, itemsPerPage, page, orderBy)
 	if err != nil {
 		panic(err)
 	}
 	return nl
 }
 
-func (m *Model) mustGetAllNodes(itemsPerPage, page int, orderBy string) *NodeList {
-	nl, err := m.getAllNodes(itemsPerPage, page, orderBy)
+func (m *Model) mustGetAllNodes(domainId, itemsPerPage, page int, orderBy string) *NodeList {
+	nl, err := m.getAllNodes(domainId, itemsPerPage, page, orderBy)
 	if err != nil {
 		panic(err)
 	}
 	return nl
 }
 
-func (m *Model) getNode(listId int) (*Node, error) {
+func (m *Model) getNode(domainId, listId int) (*Node, error) {
 	var node Node
-	err := m.db.Get(&node, "SELECT * FROM node WHERE id=$1 AND status=1", listId)
+	err := m.db.Get(&node, "SELECT * FROM node WHERE id=$1 AND domain_id=$2 AND status=1", listId, domainId)
 	return &node, err
 }
 
-func (m *Model) mustGetNode(listId int) *Node {
-	node, err := m.getNode(listId)
+func (m *Model) mustGetNode(domainId, listId int) *Node {
+	node, err := m.getNode(domainId, listId)
 	if err != nil {
 		panic(err)
 	}
@@ -143,21 +143,22 @@ func (m *Model) addNode(node *Node) (int, error) {
 	return int(id), err
 }
 
-func (m *Model) bumpVote(id, vote int) error {
-	_, err := m.db.NamedExec(`UPDATE node set vote = vote + :vote, updated = :updated WHERE id = :id`, map[string]interface{}{
-		"vote":    vote,
-		"id":      id,
-		"updated": time.Now(),
+func (m *Model) bumpVote(domainId, id, vote int) error {
+	_, err := m.db.NamedExec(`UPDATE node set vote = vote + :vote, updated = :updated WHERE domain_id = :domain_id AND id = :id`, map[string]interface{}{
+		"vote":      vote,
+		"id":        id,
+		"updated":   time.Now(),
+		"domain_id": domainId,
 	})
 	return err
 }
 
-func (m *Model) Vote(vote, id, itemId, listId int) error {
-	if err := m.bumpVote(itemId, vote); err != nil {
+func (m *Model) Vote(domainId, vote, id, itemId, listId int) error {
+	if err := m.bumpVote(domainId, itemId, vote); err != nil {
 		return err
 	}
 	// parent holds total number of votes
-	if err := m.bumpVote(listId, 1); err != nil {
+	if err := m.bumpVote(domainId, listId, 1); err != nil {
 		return err
 	}
 	return nil

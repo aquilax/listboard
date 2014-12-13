@@ -33,18 +33,20 @@ func NewListboard() *Listboard {
 
 func (l *Listboard) Run(args []string) {
 	var err error
+
 	l.config = NewConfig()
 	if err = l.config.Load(args); err != nil {
 		panic(err)
 	}
+
 	l.m = NewModel(l.config)
 	if err = l.m.Init(l.config); err != nil {
 		panic(err)
 	}
+
 	l.tp = NewTransPool(l.config.Translations)
 
 	r := mux.NewRouter()
-
 	r.HandleFunc("/", http.HandlerFunc(l.indexHandler)).Methods("GET")
 	r.HandleFunc("/feed.xml", http.HandlerFunc(l.feedHandler)).Methods("GET")
 	r.HandleFunc("/all.xml", http.HandlerFunc(l.feedAlllHandler)).Methods("GET")
@@ -76,15 +78,15 @@ func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) {
 			page = 0
 		}
 	}
-	sc := l.config.getSiteConfig("token")
+	sc := l.config.getSiteConfig(l.getToken(r))
 	s := NewSession(sc, l.tp.Get(sc.Language))
 
-	s.Set("Lists", l.m.mustGetChildNodes(0, itemsPerPage, page, "updated"))
+	s.Set("Lists", l.m.mustGetChildNodes(sc.DomainId, 0, itemsPerPage, page, "updated"))
 	s.render(w, r, "templates/layout.html", "templates/index.html")
 }
 
 func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) {
-	sc := l.config.getSiteConfig("token")
+	sc := l.config.getSiteConfig(l.getToken(r))
 
 	var errors ValidationErrors
 	var node Node
@@ -98,7 +100,6 @@ func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					panic(err)
-					return
 				}
 				url := "/list/" + strconv.Itoa(id) + "/" + hfSlug(node.Title)
 				http.Redirect(w, r, url, http.StatusFound)
@@ -122,7 +123,7 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
-	sc := l.config.getSiteConfig("token")
+	sc := l.config.getSiteConfig(l.getToken(r))
 	tr := l.tp.Get(sc.Language)
 
 	var errors ValidationErrors
@@ -137,7 +138,6 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					panic(err)
-					return
 				}
 				url := "/list/" + strconv.Itoa(listId) + "/" + hfSlug(node.Title) + "#I" + strconv.Itoa(id)
 				http.Redirect(w, r, url, http.StatusFound)
@@ -148,9 +148,9 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 
 	s.Set("Errors", errors)
 	s.Set("Form", node)
-	list := l.m.mustGetNode(listId)
+	list := l.m.mustGetNode(sc.DomainId, listId)
 	s.Set("List", list)
-	s.Set("Items", l.m.mustGetChildNodes(listId, itemsPerPage, 0, "vote DESC, created"))
+	s.Set("Items", l.m.mustGetChildNodes(sc.DomainId, listId, itemsPerPage, 0, "vote DESC, created"))
 	s.Set("FormTitle", s.Lang("New suggestion"))
 	s.Set("Subtitle", list.Title)
 	s.AddPath("/", s.Lang("Home"))
@@ -166,11 +166,11 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
-	sc := l.config.getSiteConfig("token")
+	sc := l.config.getSiteConfig(l.getToken(r))
 	tr := l.tp.Get(sc.Language)
 	var errors ValidationErrors
 	var node Node
-	item := l.m.mustGetNode(itemId)
+	item := l.m.mustGetNode(sc.DomainId, itemId)
 
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
@@ -180,12 +180,10 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					panic(err)
-					return
 				}
-				if err := l.m.Vote(node.Vote, id, itemId, item.ParentId); err != nil {
+				if err := l.m.Vote(sc.DomainId, node.Vote, id, itemId, item.ParentId); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					panic(err)
-					return
 				}
 				http.Redirect(w, r, r.URL.String()+"#I"+strconv.Itoa(id), http.StatusFound)
 			}
@@ -195,14 +193,14 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 	s.Set("Subtitle", item.Title)
 	s.Set("ShowVote", true)
 	s.Set("Errors", errors)
-	list := l.m.mustGetNode(item.ParentId)
+	list := l.m.mustGetNode(sc.DomainId, item.ParentId)
 	s.Set("List", list)
 	s.Set("Item", item)
 	if len(node.Title) == 0 {
 		node.Title = s.Lang("Re") + ": " + item.Title
 	}
 	s.Set("Form", node)
-	s.Set("Items", l.m.mustGetChildNodes(itemId, itemsPerPage, 0, "created"))
+	s.Set("Items", l.m.mustGetChildNodes(sc.DomainId, itemId, itemsPerPage, 0, "created"))
 	s.Set("FormTitle", s.Lang("New vote"))
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("/list/"+strconv.Itoa(list.Id)+"/"+hfSlug(list.Title), list.Title)
@@ -210,8 +208,7 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "templates/layout.html", "templates/vote.html", "templates/form.html")
 }
 
-func (l *Listboard) feed(w http.ResponseWriter, baseURL string, nodes *NodeList) {
-	sc := l.config.getSiteConfig("token")
+func (l *Listboard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, nodes *NodeList) {
 	feed := &Feed{
 		Title:       sc.Title,
 		Link:        &Link{Href: baseURL},
@@ -236,19 +233,22 @@ func (l *Listboard) feed(w http.ResponseWriter, baseURL string, nodes *NodeList)
 }
 
 func (l *Listboard) feedHandler(w http.ResponseWriter, r *http.Request) {
-	nodes := l.m.mustGetChildNodes(0, 20, 0, "created")
+	sc := l.config.getSiteConfig(l.getToken(r))
+	nodes := l.m.mustGetChildNodes(sc.DomainId, 0, 20, 0, "created")
 	baseUrl := "http://" + r.Host
-	l.feed(w, baseUrl, nodes)
+	l.feed(w, sc, baseUrl, nodes)
 }
 
 func (l *Listboard) feedAlllHandler(w http.ResponseWriter, r *http.Request) {
-	nodes := l.m.mustGetAllNodes(20, 0, "created")
+	sc := l.config.getSiteConfig(l.getToken(r))
+	nodes := l.m.mustGetAllNodes(sc.DomainId, 20, 0, "created")
 	baseUrl := "http://" + r.Host
-	l.feed(w, baseUrl, nodes)
+	l.feed(w, sc, baseUrl, nodes)
 }
 
 func (l *Listboard) sitemapHandler(w http.ResponseWriter, r *http.Request) {
-	nodes := l.m.mustGetChildNodes(0, 1000, 0, "created")
+	sc := l.config.getSiteConfig(l.getToken(r))
+	nodes := l.m.mustGetChildNodes(sc.DomainId, 0, 1000, 0, "created")
 	var urlSet sitemap.URLSet
 	for _, node := range *nodes {
 		urlSet.URLs = append(urlSet.URLs, sitemap.URL{
@@ -292,4 +292,8 @@ func (l *Listboard) validateForm(r *http.Request, domainId, parentId, level int,
 		}
 	}
 	return node, errors
+}
+
+func (l *Listboard) getToken(r *http.Request) string {
+	return r.Header.Get(l.config.Token)
 }

@@ -33,6 +33,10 @@ func NewTemplateData(sc *SiteConfig) TemplateData {
 	td.Set("ShowVote", false)
 	td.Set("Css", sc.Css)
 	td.Set("FormTitle", "")
+	td.Set("Analytics", sc.Analytics)
+	td.Set("Domain", sc.Domain)
+	td.Set("PostHeader", template.HTML(sc.PostHeader))
+	td.Set("PreFooter", template.HTML(sc.PreFooter))
 	return td
 }
 

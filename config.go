@@ -8,23 +8,26 @@ import (
 const defaultConfigFile = "./config/listboard.json"
 
 type Config struct {
-	Server       string
-	Database     string
-	Dsn          string
-	Translations string
-	Servers      map[string]SiteConfig
+	Server       string                `json:"server"`
+	Database     string                `json:"database"`
+	Dsn          string                `json:"dsn"`
+	Translations string                `json:"translations"`
+	Token        string                `json:"token"`
+	Servers      map[string]SiteConfig `json:"servers"`
 }
 
 type SiteConfig struct {
-	DomainId    int
-	Language    string
-	Css         string
-	Title       string
-	Description string
-	AuthorName  string
-	AuthorEmail string
-	PostHeader  string
-	PreFooter   string
+	DomainId    int    `json:"domain_id"`
+	Analytics   string `json:"analytics"`
+	Domain      string `json:"domain"`
+	Language    string `json:"language"`
+	Css         string `json:"css"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	AuthorName  string `json:"author_name"`
+	AuthorEmail string `json:"author_email"`
+	PostHeader  string `json:"post_header"`
+	PreFooter   string `json:"pre_footer"`
 }
 
 func NewConfig() *Config {
