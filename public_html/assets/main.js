@@ -25,6 +25,21 @@ function upload(file) {
 	xhr.send(fd);
 }
 
+function clickHandler(videoId) {
+	return function() {
+
+		// Create an iFrame with autoplay set to true
+		var iframe = document.createElement("iframe");
+		iframe.setAttribute("src",
+			"https://www.youtube.com/embed/" + videoId + "?autoplay=1&autohide=1&border=0&wmode=opaque&enablejsapi=1");
+
+		// The height and width of the iFrame should be the same as parent
+		iframe.className = 'video_frame'
+		// Replace the YouTube thumbnail with YouTube HTML5 Player
+		this.parentNode.replaceChild(iframe, this);
+	}
+};
+
 function youtube() {
 	var re = /youtube\.com\/watch\?.*v=(.+?)(&|$)/
 	var links = document.getElementsByTagName('a');
@@ -42,19 +57,7 @@ function youtube() {
 			image.setAttribute('src', 'http://i.ytimg.com/vi/'+videoId+'/hqdefault.jpg');
 			div.appendChild(image);
 
-			image.onclick = function() {
-
-				// Create an iFrame with autoplay set to true
-				var iframe = document.createElement("iframe");
-				iframe.setAttribute("src",
-					"https://www.youtube.com/embed/" + videoId + "?autoplay=1&autohide=1&border=0&wmode=opaque&enablejsapi=1");
-
-				// The height and width of the iFrame should be the same as parent
-				iframe.className = 'video_frame'
-				// Replace the YouTube thumbnail with YouTube HTML5 Player
-				this.parentNode.replaceChild(iframe, this);
-
-			};
+			image.onclick = clickHandler(videoId)
 			links[i].parentElement.insertBefore(div, links[i]);
 		}
 	}
