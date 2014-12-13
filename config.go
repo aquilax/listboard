@@ -8,11 +8,11 @@ import (
 const defaultConfigFile = "./config/listboard.json"
 
 type Config struct {
-	Server               string
-	Database             string
-	Dsn                  string
-	TranslationsBasePath string
-	Servers              map[string]SiteConfig
+	Server       string
+	Database     string
+	Dsn          string
+	Translations string
+	Servers      map[string]SiteConfig
 }
 
 type SiteConfig struct {
@@ -28,11 +28,7 @@ type SiteConfig struct {
 }
 
 func NewConfig() *Config {
-	return &Config{
-		Server:   ":8080",
-		Database: "sqlite3",
-		Dsn:      "./db/test.sqlite",
-	}
+	return &Config{}
 }
 
 func (c *Config) Load(args []string) error {

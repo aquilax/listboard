@@ -41,7 +41,7 @@ func (l *Listboard) Run(args []string) {
 	if err = l.m.Init(l.config); err != nil {
 		panic(err)
 	}
-	l.tp = NewTransPool(l.config.TranslationsBasePath)
+	l.tp = NewTransPool(l.config.Translations)
 
 	r := mux.NewRouter()
 

@@ -1,5 +1,11 @@
 package main
 
+import (
+	"encoding/json"
+	"log"
+	"os"
+)
+
 type Translations map[string]string
 
 type Language struct {
@@ -19,17 +25,34 @@ func NewTransPool(basePath string) *TransPool {
 	}
 }
 
-func NewLanguage(lang string) *Language {
+func NewLanguage(basePath, lang string) *Language {
+	var t Translations
+	found := true
+	fileName := basePath + lang + ".json"
+	file, err := os.Open(fileName)
+	if err != nil {
+		found = false
+		log.Printf("Language %s not found", fileName)
+	}
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&t); err != nil {
+		log.Printf("Error loading language %s, %s", fileName, err)
+		found = false
+		t = make(Translations)
+	}
 	return &Language{
-		found: false,
-		tr:    make(Translations),
+		found: found,
+		tr:    t,
 	}
 }
 
 func (tp *TransPool) Get(lang string) *Language {
-	l, ok := tp.languages[lang]
+	var l *Language
+	var ok bool
+	l, ok = tp.languages[lang]
 	if !ok {
-		tp.languages[lang] = NewLanguage(lang)
+		l = NewLanguage(tp.basePath, lang)
+		tp.languages[lang] = l
 	}
 	return l
 }

@@ -2,10 +2,11 @@
 	"server": ":8080",
 	"database": "sqlite3",
 	"dsn": "./db/test.sqlite",
+	"translations": "./translations/",
 	"servers": {
 		"": {
 			"domain_id": "1",
-			"lang": "en",
+			"language": "en_US",
 			"css": "/assets/style.css",
 			"title": "Default site",
 			"description": "This is the default listboard site",
