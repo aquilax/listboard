@@ -153,6 +153,7 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 	s.Set("Items", l.m.mustGetChildNodes(sc.DomainId, listId, itemsPerPage, 0, "vote DESC, created"))
 	s.Set("FormTitle", s.Lang("New suggestion"))
 	s.Set("Subtitle", list.Title)
+	s.Set("Description", list.Title)
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("", list.Title)
 	s.render(w, r, "templates/layout.html", "templates/list.html", "templates/form.html")
@@ -191,6 +192,7 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	s := NewSession(sc, tr)
 	s.Set("Subtitle", item.Title)
+	s.Set("Description", item.Title)
 	s.Set("ShowVote", true)
 	s.Set("Errors", errors)
 	list := l.m.mustGetNode(sc.DomainId, item.ParentId)
