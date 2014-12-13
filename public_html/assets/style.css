@@ -41,6 +41,6 @@ pre{background: #efefef;padding: 1em;border: 1px solid #cecece;overflow-x: auto;
 ul{list-style: none;}
 h3 a.ref, h4 a.ref{color:transparent;}
 h3:hover a.ref, h4:hover a.ref {color:#cecece;}
-.article {
-	padding: 0 1em;
-}
+.article {padding: 0 1em;}
+.txt{overflow: auto;}
+img{max-width:100%;height:auto;}
