@@ -62,7 +62,7 @@ func (m *Model) getChildNodes(domainId, parentNodeId, itemsPerPage, page int, or
 
 func (m *Model) getAllNodes(domainId, itemsPerPage, page int, orderBy string) (*NodeList, error) {
 	var nl NodeList
-	err := m.db.Select(&nl, "SELECT * FROM node WHERE domain_id = ? status=1 ORDER BY "+orderBy+" LIMIT ?, ?", domainId, page, itemsPerPage)
+	err := m.db.Select(&nl, "SELECT * FROM node WHERE domain_id = ? AND status=1 ORDER BY "+orderBy+" LIMIT ?, ?", domainId, page, itemsPerPage)
 	return &nl, err
 }
 
