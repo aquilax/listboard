@@ -1,6 +1,8 @@
 {{define "form"}}
 	{{if .Errors }}
-		{{.Errors}}
+		{{range .Errors}}
+			<p class=".error">{{.}}</p>
+		{{end}}
 	{{end}}
 	<div id="post" class="topic">
 		<h3>{{lang .FormTitle}}</h3>

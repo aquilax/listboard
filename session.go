@@ -53,15 +53,13 @@ func (s *Session) Lang(text string) string {
 	return s.ln.Lang(text)
 }
 
-func (s *Session) render(w http.ResponseWriter, r *http.Request, filenames ...string) {
+func (s *Session) render(w http.ResponseWriter, r *http.Request, filenames ...string) error {
 	t := template.New("layout.html")
 	// Add helper functions
 	t.Funcs(s.getHelpers())
 	// Add pad
 	s.td.Set("Path", s.path)
-	if err := template.Must(t.ParseFiles(filenames...)).Execute(w, s.td); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	return template.Must(t.ParseFiles(filenames...)).Execute(w, s.td)
 }
 
 func (td TemplateData) Set(name string, value interface{}) {

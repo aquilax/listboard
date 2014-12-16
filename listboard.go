@@ -27,6 +27,8 @@ type Listboard struct {
 
 type ValidationErrors []string
 
+type appHandler func(http.ResponseWriter, *http.Request) error
+
 func NewListboard() *Listboard {
 	return &Listboard{}
 }
@@ -47,14 +49,14 @@ func (l *Listboard) Run(args []string) {
 	l.tp = NewTransPool(l.config.Translations)
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", http.HandlerFunc(l.indexHandler)).Methods("GET")
-	r.HandleFunc("/feed.xml", http.HandlerFunc(l.feedHandler)).Methods("GET")
-	r.HandleFunc("/all.xml", http.HandlerFunc(l.feedAlllHandler)).Methods("GET")
-	r.HandleFunc("/sitemap.xml", http.HandlerFunc(l.sitemapHandler)).Methods("GET")
+	r.HandleFunc("/", appHandler(l.indexHandler).ServeHTTP).Methods("GET")
+	r.HandleFunc("/feed.xml", appHandler(l.feedHandler).ServeHTTP).Methods("GET")
+	r.HandleFunc("/all.xml", appHandler(l.feedAlllHandler).ServeHTTP).Methods("GET")
+	r.HandleFunc("/sitemap.xml", appHandler(l.sitemapHandler).ServeHTTP).Methods("GET")
 
-	r.HandleFunc("/add.html", http.HandlerFunc(l.addFormHandler)).Methods("GET", "POST")
-	r.HandleFunc("/list/{listId}/{slug}", http.HandlerFunc(l.listHandler)).Methods("GET", "POST")
-	r.HandleFunc("/vote/{itemId}/{slug}", http.HandlerFunc(l.voteHandler)).Methods("GET", "POST")
+	r.HandleFunc("/add.html", appHandler(l.addFormHandler).ServeHTTP).Methods("GET", "POST")
+	r.HandleFunc("/list/{listId}/{slug}", appHandler(l.listHandler).ServeHTTP).Methods("GET", "POST")
+	r.HandleFunc("/vote/{itemId}/{slug}", appHandler(l.voteHandler).ServeHTTP).Methods("GET", "POST")
 
 	// Static assets
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public_html")))
@@ -67,7 +69,19 @@ func (l *Listboard) Run(args []string) {
 	}
 }
 
-func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) {
+func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if err := fn(w, r); err != nil {
+		httpError, ok := err.(HTTPError)
+		if ok {
+			http.Error(w, httpError.Message, httpError.Code)
+			return
+		}
+		// Default to 500 Internal Server Error
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) error {
 	pageStr := r.URL.Query().Get("hostname")
 	page := 0
 	var err error
@@ -82,10 +96,10 @@ func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) {
 	s := NewSession(sc, l.tp.Get(sc.Language))
 	s.AddPath("", s.Lang("Home"))
 	s.Set("Lists", l.m.mustGetChildNodes(sc.DomainId, 0, itemsPerPage, page, "updated DESC"))
-	s.render(w, r, "templates/layout.html", "templates/index.html")
+	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("index.html"))
 }
 
-func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) {
+func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) error {
 	sc := l.config.getSiteConfig(l.getToken(r))
 
 	var errors ValidationErrors
@@ -98,8 +112,7 @@ func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) {
 				// save and redirect
 				id, err := l.m.addNode(&node)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					panic(err)
+					return &HTTPError{Err: err, Code: http.StatusInternalServerError}
 				}
 				url := "/list/" + strconv.Itoa(id) + "/" + hfSlug(node.Title)
 				http.Redirect(w, r, url, http.StatusFound)
@@ -112,16 +125,15 @@ func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) {
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("", s.Lang("New list"))
 	s.Set("Subtitle", s.Lang("New list"))
-	s.render(w, r, "templates/layout.html", "templates/add.html", "templates/form.html")
+	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("add.html"), sc.templatePath("form.html"))
 }
 
-func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
+func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) error {
 	vars := mux.Vars(r)
 	listId, err := strconv.Atoi(vars["listId"])
 	if err != nil {
 		log.Printf("%d is not a valid list number", listId)
-		http.Error(w, "Not found", http.StatusNotFound)
-		return
+		return err
 	}
 	sc := l.config.getSiteConfig(l.getToken(r))
 	tr := l.tp.Get(sc.Language)
@@ -156,16 +168,15 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) {
 	s.Set("Description", list.Title)
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("", list.Title)
-	s.render(w, r, "templates/layout.html", "templates/list.html", "templates/form.html")
+	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("list.html"), sc.templatePath("form.html"))
 }
 
-func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
+func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 	vars := mux.Vars(r)
 	itemId, err := strconv.Atoi(vars["itemId"])
 	if err != nil {
 		log.Printf("%d is not a valid item number", itemId)
-		http.Error(w, "Not found", http.StatusNotFound)
-		return
+		return err
 	}
 	sc := l.config.getSiteConfig(l.getToken(r))
 	tr := l.tp.Get(sc.Language)
@@ -207,10 +218,10 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) {
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("/list/"+strconv.Itoa(list.Id)+"/"+hfSlug(list.Title), list.Title)
 	s.AddPath("", item.Title)
-	s.render(w, r, "templates/layout.html", "templates/vote.html", "templates/form.html")
+	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("vote.html"), sc.templatePath("form.html"))
 }
 
-func (l *Listboard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, nodes *NodeList) {
+func (l *Listboard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, nodes *NodeList) error {
 	feed := &Feed{
 		Title:       sc.Title,
 		Link:        &Link{Href: baseURL},
@@ -227,28 +238,24 @@ func (l *Listboard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, 
 		})
 	}
 	w.Header().Set("Content-Type", "application/rss+xml")
-	err := feed.WriteRss(w)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	return feed.WriteRss(w)
 }
 
-func (l *Listboard) feedHandler(w http.ResponseWriter, r *http.Request) {
+func (l *Listboard) feedHandler(w http.ResponseWriter, r *http.Request) error {
 	sc := l.config.getSiteConfig(l.getToken(r))
 	nodes := l.m.mustGetChildNodes(sc.DomainId, 0, 20, 0, "created")
 	baseUrl := "http://" + r.Host
-	l.feed(w, sc, baseUrl, nodes)
+	return l.feed(w, sc, baseUrl, nodes)
 }
 
-func (l *Listboard) feedAlllHandler(w http.ResponseWriter, r *http.Request) {
+func (l *Listboard) feedAlllHandler(w http.ResponseWriter, r *http.Request) error {
 	sc := l.config.getSiteConfig(l.getToken(r))
 	nodes := l.m.mustGetAllNodes(sc.DomainId, 20, 0, "created")
 	baseUrl := "http://" + r.Host
-	l.feed(w, sc, baseUrl, nodes)
+	return l.feed(w, sc, baseUrl, nodes)
 }
 
-func (l *Listboard) sitemapHandler(w http.ResponseWriter, r *http.Request) {
+func (l *Listboard) sitemapHandler(w http.ResponseWriter, r *http.Request) error {
 	sc := l.config.getSiteConfig(l.getToken(r))
 	nodes := l.m.mustGetChildNodes(sc.DomainId, 0, 1000, 0, "created")
 	var urlSet sitemap.URLSet
@@ -262,11 +269,11 @@ func (l *Listboard) sitemapHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	xml, err := sitemap.Marshal(&urlSet)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return err
 	}
 	w.Header().Set("Content-Type", "application/xml")
-	w.Write(xml)
+	_, err = w.Write(xml)
+	return err;
 }
 
 func (l *Listboard) validateForm(r *http.Request, domainId, parentId, level int, ln *Language) (Node, ValidationErrors) {

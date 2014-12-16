@@ -7,13 +7,14 @@ import (
 )
 
 const defaultConfigFile = "./config/listboard.json"
+const defaultTemplatesBase = "./templates/default/"
 
 type Config struct {
 	Server       string                `json:"server"`
 	Database     string                `json:"database"`
 	Dsn          string                `json:"dsn"`
 	Translations string                `json:"translations"`
-	Token        string                `json:"token"`
+	Token    string                `json:"token"`
 	Servers      map[string]SiteConfig `json:"servers"`
 }
 
@@ -29,6 +30,7 @@ type SiteConfig struct {
 	AuthorEmail string `json:"author_email"`
 	PostHeader  string `json:"post_header"`
 	PreFooter   string `json:"pre_footer"`
+	Templates   string `json:"templates"`
 }
 
 func NewConfig() *Config {
@@ -46,7 +48,10 @@ func (c *Config) Load(args []string) error {
 		return err
 	}
 	decoder := json.NewDecoder(file)
-	return decoder.Decode(c)
+	if err := decoder.Decode(c); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Config) getSiteConfig(token string) *SiteConfig {
@@ -61,4 +66,11 @@ func (c *Config) getSiteConfig(token string) *SiteConfig {
 		}
 	}
 	return &sc
+}
+
+func (sc *SiteConfig) templatePath(templateName string) string {
+	if sc.Templates != "" {
+		return sc.Templates + templateName
+	}
+	return defaultTemplatesBase + templateName
 }
