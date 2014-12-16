@@ -3,7 +3,6 @@
 	"database": "sqlite3",
 	"dsn": "./db/test.sqlite",
 	"translations": "./translations/",
-	"templates": "./templates/default/",
 	"token": "X-Server",
 	"servers": {
 		"": {

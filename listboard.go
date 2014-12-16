@@ -148,8 +148,11 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) error {
 				// save and redirect
 				id, err := l.m.addNode(&node)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					panic(err)
+					return &HTTPError{
+						Err: err,
+						Message: err.Error(),
+						Code: http.StatusInternalServerError,
+					}
 				}
 				url := "/list/" + strconv.Itoa(listId) + "/" + hfSlug(node.Title) + "#I" + strconv.Itoa(id)
 				http.Redirect(w, r, url, http.StatusFound)
@@ -190,12 +193,18 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 			if len(errors) == 0 {
 				id, err := l.m.addNode(&node)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					panic(err)
+					return &HTTPError{
+						Err: err,
+						Message: err.Error(),
+						Code: http.StatusInternalServerError,
+					}
 				}
 				if err := l.m.Vote(sc.DomainId, node.Vote, id, itemId, item.ParentId); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					panic(err)
+					return &HTTPError{
+						Err: err,
+						Message: err.Error(),
+						Code: http.StatusInternalServerError,
+					}
 				}
 				http.Redirect(w, r, r.URL.String()+"#I"+strconv.Itoa(id), http.StatusFound)
 			}
