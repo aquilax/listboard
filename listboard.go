@@ -4,6 +4,7 @@ import (
 	. "github.com/gorilla/feeds"
 	"github.com/gorilla/mux"
 	"github.com/sourcegraph/sitemap"
+	"database/sql"
 	"log"
 	"net/http"
 	"strconv"
@@ -71,6 +72,10 @@ func (l *Listboard) Run(args []string) {
 
 func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := fn(w, r); err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
 		httpError, ok := err.(HTTPError)
 		if ok {
 			http.Error(w, httpError.Message, httpError.Code)
@@ -163,7 +168,10 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) error {
 
 	s.Set("Errors", errors)
 	s.Set("Form", node)
-	list := l.m.mustGetNode(sc.DomainId, listId)
+	list, err := l.m.getNode(sc.DomainId, listId)
+	if err != nil {
+		return err
+	}
 	s.Set("List", list)
 	s.Set("Items", l.m.mustGetChildNodes(sc.DomainId, listId, itemsPerPage, 0, "vote DESC, created"))
 	s.Set("FormTitle", s.Lang("New suggestion"))
@@ -185,8 +193,10 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 	tr := l.tp.Get(sc.Language)
 	var errors ValidationErrors
 	var node Node
-	item := l.m.mustGetNode(sc.DomainId, itemId)
-
+	item, err := l.m.getNode(sc.DomainId, itemId)
+	if err != nil {
+		return err
+	}
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
 			node, errors = l.validateForm(r, sc.DomainId, itemId, levelVote, tr)
@@ -215,7 +225,10 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 	s.Set("Description", item.Title)
 	s.Set("ShowVote", true)
 	s.Set("Errors", errors)
-	list := l.m.mustGetNode(sc.DomainId, item.ParentId)
+	list, err := l.m.getNode(sc.DomainId, item.ParentId)
+	if err != nil {
+		return err
+	}
 	s.Set("List", list)
 	s.Set("Item", item)
 	if len(node.Title) == 0 {

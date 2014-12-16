@@ -88,14 +88,6 @@ func (m *Model) getNode(domainId, listId int) (*Node, error) {
 	return &node, err
 }
 
-func (m *Model) mustGetNode(domainId, listId int) *Node {
-	node, err := m.getNode(domainId, listId)
-	if err != nil {
-		panic(err)
-	}
-	return node
-}
-
 func (m *Model) addNode(node *Node) (int, error) {
 	res, err := m.db.NamedExec(`INSERT INTO node (
 			parent_id,
