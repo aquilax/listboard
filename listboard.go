@@ -265,14 +265,14 @@ func (l *Listboard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, 
 
 func (l *Listboard) feedHandler(w http.ResponseWriter, r *http.Request) error {
 	sc := l.config.getSiteConfig(l.getToken(r))
-	nodes := l.m.mustGetChildNodes(sc.DomainId, 0, 20, 0, "created")
+	nodes := l.m.mustGetChildNodes(sc.DomainId, 0, 20, 0, "created DESC")
 	baseUrl := "http://" + r.Host
 	return l.feed(w, sc, baseUrl, nodes)
 }
 
 func (l *Listboard) feedAlllHandler(w http.ResponseWriter, r *http.Request) error {
 	sc := l.config.getSiteConfig(l.getToken(r))
-	nodes := l.m.mustGetAllNodes(sc.DomainId, 20, 0, "created")
+	nodes := l.m.mustGetAllNodes(sc.DomainId, 20, 0, "created DESC")
 	baseUrl := "http://" + r.Host
 	return l.feed(w, sc, baseUrl, nodes)
 }
