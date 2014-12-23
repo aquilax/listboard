@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	itemsPerPage  = 10
+	itemsPerPage  = 100
 	statusEnabled = 1
 	levelRoot     = iota
 	levelList
