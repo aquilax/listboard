@@ -22,10 +22,10 @@ type PagConfig struct {
 }
 
 func Pagination(pc *PagConfig) *Pages {
-	var pages Pages
 	if pc.total <= pc.ipp {
-		return &pages
+		return nil
 	}
+	var pages Pages
 	// Normalize first page
 	if pc.page == 0 {
 		pc.page = 1

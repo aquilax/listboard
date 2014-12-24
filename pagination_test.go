@@ -13,7 +13,7 @@ func TestPagination(t *testing.T) {
 				page: 0,
 				total: 3,
 			});
-			So(len(*pl), ShouldEqual, 0)
+			So(pl, ShouldBeNil)
 		})
 		Convey("Returns correct number of pages", func() {
 			pl := Pagination(&PagConfig{
