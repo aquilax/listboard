@@ -14,7 +14,7 @@ type Config struct {
 	Database     string                `json:"database"`
 	Dsn          string                `json:"dsn"`
 	Translations string                `json:"translations"`
-	Token    string                `json:"token"`
+	Token        string                `json:"token"`
 	Servers      map[string]SiteConfig `json:"servers"`
 }
 

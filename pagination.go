@@ -14,10 +14,10 @@ type Page struct {
 type Pages []*Page
 
 type PagConfig struct {
-	ipp int
-	page int
+	ipp   int
+	page  int
 	total int
-	url string
+	url   string
 	param string
 }
 
@@ -36,7 +36,7 @@ func Pagination(pc *PagConfig) *Pages {
 	pCount := int(math.Ceil(float64(pc.total) / float64(pc.ipp)))
 	for i := 1; i <= pCount; i++ {
 		// Don't set the url for the current page
-		tURL := "";
+		tURL := ""
 		if i != pc.page {
 			val.Set(pc.param, strconv.Itoa(i))
 			pUrl.RawQuery = val.Encode()

@@ -1,11 +1,12 @@
 package main
 
 import (
+	"time"
+
 	"github.com/aquilax/tripcode"
 	"github.com/gosimple/slug"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday"
-	"time"
 )
 
 func hfTime(t time.Time) string {

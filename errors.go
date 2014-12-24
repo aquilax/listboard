@@ -1,9 +1,9 @@
 package main
 
 type HTTPError struct {
-	Err   error
-    Message string
-    Code    int
+	Err     error
+	Message string
+	Code    int
 }
 
 func (e HTTPError) Error() string {

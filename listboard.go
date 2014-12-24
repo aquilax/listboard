@@ -1,15 +1,16 @@
 package main
 
 import (
-	. "github.com/gorilla/feeds"
-	"github.com/gorilla/mux"
-	"github.com/sourcegraph/sitemap"
 	"database/sql"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	. "github.com/gorilla/feeds"
+	"github.com/gorilla/mux"
+	"github.com/sourcegraph/sitemap"
 )
 
 const (
@@ -86,7 +87,7 @@ func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getPageNumber (pageStr string) int {
+func getPageNumber(pageStr string) int {
 	page := 1
 	var err error
 	if len(pageStr) != 0 {
@@ -104,12 +105,12 @@ func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) error {
 	sc := l.config.getSiteConfig(l.getToken(r))
 	s := NewSession(sc, l.tp.Get(sc.Language))
 	s.AddPath("", s.Lang("Home"))
-	s.Set("Lists", l.m.mustGetChildNodes(sc.DomainId, 0, itemsPerPage, (page * itemsPerPage), "updated DESC"))
+	s.Set("Lists", l.m.mustGetChildNodes(sc.DomainId, 0, itemsPerPage, (page*itemsPerPage), "updated DESC"))
 	s.Set("Pagination", Pagination(&PagConfig{
-		page: page + 1,
-		ipp: itemsPerPage,
+		page:  page + 1,
+		ipp:   itemsPerPage,
 		total: l.m.mustGetTotal(0),
-		url: "?",
+		url:   "?",
 		param: "page",
 	}))
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("index.html"))
@@ -165,9 +166,9 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) error {
 				id, err := l.m.addNode(&node)
 				if err != nil {
 					return &HTTPError{
-						Err: err,
+						Err:     err,
 						Message: err.Error(),
-						Code: http.StatusInternalServerError,
+						Code:    http.StatusInternalServerError,
 					}
 				}
 				url := "/list/" + strconv.Itoa(listId) + "/" + hfSlug(node.Title) + "#I" + strconv.Itoa(id)
@@ -185,15 +186,15 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) error {
 	}
 	page := getPageNumber(r.URL.Query().Get("page"))
 	s.Set("List", list)
-	s.Set("Items", l.m.mustGetChildNodes(sc.DomainId, listId, itemsPerPage, (page * itemsPerPage), "vote DESC, created"))
+	s.Set("Items", l.m.mustGetChildNodes(sc.DomainId, listId, itemsPerPage, (page*itemsPerPage), "vote DESC, created"))
 	s.Set("FormTitle", s.Lang("New suggestion"))
 	s.Set("Subtitle", list.Title)
 	s.Set("Description", list.Title)
 	s.Set("Pagination", Pagination(&PagConfig{
-		page: page + 1,
-		ipp: itemsPerPage,
+		page:  page + 1,
+		ipp:   itemsPerPage,
 		total: l.m.mustGetTotal(listId),
-		url: "?",
+		url:   "?",
 		param: "page",
 	}))
 	s.AddPath("/", s.Lang("Home"))
@@ -223,16 +224,16 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 				id, err := l.m.addNode(&node)
 				if err != nil {
 					return &HTTPError{
-						Err: err,
+						Err:     err,
 						Message: err.Error(),
-						Code: http.StatusInternalServerError,
+						Code:    http.StatusInternalServerError,
 					}
 				}
 				if err := l.m.Vote(sc.DomainId, node.Vote, id, itemId, item.ParentId); err != nil {
 					return &HTTPError{
-						Err: err,
+						Err:     err,
 						Message: err.Error(),
-						Code: http.StatusInternalServerError,
+						Code:    http.StatusInternalServerError,
 					}
 				}
 				http.Redirect(w, r, r.URL.String()+"#I"+strconv.Itoa(id), http.StatusFound)
@@ -314,7 +315,7 @@ func (l *Listboard) sitemapHandler(w http.ResponseWriter, r *http.Request) error
 	}
 	w.Header().Set("Content-Type", "application/xml")
 	_, err = w.Write(xml)
-	return err;
+	return err
 }
 
 func (l *Listboard) validateForm(r *http.Request, domainId, parentId, level int, ln *Language) (Node, ValidationErrors) {
