@@ -47,3 +47,20 @@
 	<hr/>
 {{ end }}
 {{end}}
+
+{{define "pagination"}}
+{{ if .}}
+	<div class="pagination">
+		{{lang "Pages"}}:
+		<ul>
+		{{ range . }}
+			<li>{{ if .URL }}
+				<a href="{{ .URL }}">{{ html .Num }}</a>
+			{{ else }}
+				{{ html .Num }}
+			{{ end }}</li>
+		{{ end }}
+		</ul>
+	</div>
+{{ end }}
+{{end}}

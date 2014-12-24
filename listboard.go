@@ -86,21 +86,32 @@ func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) error {
-	pageStr := r.URL.Query().Get("hostname")
-	page := 0
+func getPageNumber (pageStr string) int {
+	page := 1
 	var err error
 	if len(pageStr) != 0 {
 		page, err = strconv.Atoi(pageStr)
 		if err != nil {
 			log.Printf("%s is not a valid page number", pageStr)
-			page = 0
+			page = 1
 		}
 	}
+	return page - 1
+}
+
+func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) error {
+	page := getPageNumber(r.URL.Query().Get("page"))
 	sc := l.config.getSiteConfig(l.getToken(r))
 	s := NewSession(sc, l.tp.Get(sc.Language))
 	s.AddPath("", s.Lang("Home"))
-	s.Set("Lists", l.m.mustGetChildNodes(sc.DomainId, 0, itemsPerPage, page, "updated DESC"))
+	s.Set("Lists", l.m.mustGetChildNodes(sc.DomainId, 0, itemsPerPage, (page * itemsPerPage), "updated DESC"))
+	s.Set("Pagination", Pagination(&PagConfig{
+		page: page + 1,
+		ipp: itemsPerPage,
+		total: l.m.mustGetTotal(0),
+		url: "?",
+		param: "page",
+	}))
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("index.html"))
 }
 
@@ -172,11 +183,19 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
+	page := getPageNumber(r.URL.Query().Get("page"))
 	s.Set("List", list)
-	s.Set("Items", l.m.mustGetChildNodes(sc.DomainId, listId, itemsPerPage, 0, "vote DESC, created"))
+	s.Set("Items", l.m.mustGetChildNodes(sc.DomainId, listId, itemsPerPage, (page * itemsPerPage), "vote DESC, created"))
 	s.Set("FormTitle", s.Lang("New suggestion"))
 	s.Set("Subtitle", list.Title)
 	s.Set("Description", list.Title)
+	s.Set("Pagination", Pagination(&PagConfig{
+		page: page + 1,
+		ipp: itemsPerPage,
+		total: l.m.mustGetTotal(listId),
+		url: "?",
+		param: "page",
+	}))
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("", list.Title)
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("list.html"), sc.templatePath("form.html"))
@@ -235,7 +254,7 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 		node.Title = s.Lang("Re") + ": " + item.Title
 	}
 	s.Set("Form", node)
-	s.Set("Items", l.m.mustGetChildNodes(sc.DomainId, itemId, itemsPerPage, 0, "created"))
+	s.Set("Items", l.m.mustGetChildNodes(sc.DomainId, itemId, itemsPerPage, 0, "created DESC"))
 	s.Set("FormTitle", s.Lang("New vote"))
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("/list/"+strconv.Itoa(list.Id)+"/"+hfSlug(list.Title), list.Title)

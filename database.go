@@ -54,32 +54,46 @@ func (m *Model) Init(config *Config) error {
 	return err
 }
 
-func (m *Model) getChildNodes(domainId, parentNodeId, itemsPerPage, page int, orderBy string) (*NodeList, error) {
+func (m *Model) getChildNodes(domainId, parentNodeId, count, offset int, orderBy string) (*NodeList, error) {
 	var nl NodeList
-	err := m.db.Select(&nl, "SELECT * FROM node WHERE domain_id = ? AND status=1 AND parent_id=? ORDER BY "+orderBy+" LIMIT ?, ?", domainId, parentNodeId, page, itemsPerPage)
+	err := m.db.Select(&nl, "SELECT * FROM node WHERE domain_id = ? AND status=1 AND parent_id=? ORDER BY "+orderBy+" LIMIT ?, ?", domainId, parentNodeId, offset, count)
 	return &nl, err
 }
 
-func (m *Model) getAllNodes(domainId, itemsPerPage, page int, orderBy string) (*NodeList, error) {
+func (m *Model) getAllNodes(domainId, count, offset int, orderBy string) (*NodeList, error) {
 	var nl NodeList
-	err := m.db.Select(&nl, "SELECT * FROM node WHERE domain_id = ? AND status=1 ORDER BY "+orderBy+" LIMIT ?, ?", domainId, page, itemsPerPage)
+	err := m.db.Select(&nl, "SELECT * FROM node WHERE domain_id = ? AND status=1 ORDER BY "+orderBy+" LIMIT ?, ?", domainId, offset, count)
 	return &nl, err
 }
 
-func (m *Model) mustGetChildNodes(domainId, parentNodeId, itemsPerPage, page int, orderBy string) *NodeList {
-	nl, err := m.getChildNodes(domainId, parentNodeId, itemsPerPage, page, orderBy)
+func (m *Model) mustGetChildNodes(domainId, parentNodeId, count, offset int, orderBy string) *NodeList {
+	nl, err := m.getChildNodes(domainId, parentNodeId, count, offset, orderBy)
 	if err != nil {
 		panic(err)
 	}
 	return nl
 }
 
-func (m *Model) mustGetAllNodes(domainId, itemsPerPage, page int, orderBy string) *NodeList {
-	nl, err := m.getAllNodes(domainId, itemsPerPage, page, orderBy)
+func (m *Model) mustGetAllNodes(domainId, count, offset int, orderBy string) *NodeList {
+	nl, err := m.getAllNodes(domainId, count, offset, orderBy)
 	if err != nil {
 		panic(err)
 	}
 	return nl
+}
+
+func (m *Model) getTotal(parentNodeId int) (int, error) {
+	var total int
+	err := m.db.Get(&total, "SELECT count(*) FROM node WHERE parent_id=$1 AND status=1", parentNodeId)
+	return total, err
+}
+
+func (m *Model) mustGetTotal(parentNodeId int) int {
+	total, err := m.getTotal(parentNodeId)
+	if err != nil {
+		panic(err)
+	}
+	return total
 }
 
 func (m *Model) getNode(domainId, listId int) (*Node, error) {

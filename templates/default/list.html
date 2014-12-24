@@ -11,6 +11,7 @@
 			<em>{{ time .List.Created }}</em>
 		</div>
 	</div>
+	{{template "pagination" .Pagination }}
 	{{if .Items}}
 	<ul>
 	{{range $i, $item := .Items}}
@@ -33,5 +34,6 @@
 	{{end}}
 	</ul>
 	{{end}}
+	{{template "pagination" .Pagination }}
 	{{template "form" .}}
 {{end}}
