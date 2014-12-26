@@ -43,6 +43,18 @@ func inHoneypot(t string) bool {
 }
 
 func renderText(t string) string {
-	unsafe := blackfriday.MarkdownCommon([]byte(t))
+	extensions := 0
+	extensions |= blackfriday.EXTENSION_HARD_LINE_BREAK
+	extensions |= blackfriday.HTML_USE_XHTML
+	extensions |= blackfriday.HTML_USE_SMARTYPANTS
+	extensions |= blackfriday.HTML_SMARTYPANTS_FRACTIONS
+	extensions |= blackfriday.HTML_SMARTYPANTS_LATEX_DASHES
+	htmlFlags := 0 |
+		blackfriday.HTML_USE_XHTML |
+		blackfriday.HTML_USE_SMARTYPANTS |
+		blackfriday.HTML_SMARTYPANTS_FRACTIONS
+
+	renderer := blackfriday.HtmlRenderer(htmlFlags, "", "")
+	unsafe := blackfriday.Markdown([]byte(t), renderer, extensions)
 	return string(bluemonday.UGCPolicy().SanitizeBytes(unsafe))
 }
