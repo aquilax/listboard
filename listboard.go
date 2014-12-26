@@ -274,7 +274,7 @@ func (l *Listboard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, 
 	for _, node := range *nodes {
 		feed.Items = append(feed.Items, &Item{
 			Title:       node.Title,
-			Link:        &Link{Href: baseURL + "/list/" + strconv.Itoa(node.Id) + "/" + hfSlug(node.Title)},
+			Link:        &Link{Href: getUrl(baseURL, node)},
 			Description: string(node.Rendered),
 			Created:     node.Created,
 		})
@@ -347,4 +347,15 @@ func (l *Listboard) validateForm(r *http.Request, domainId, parentId, level int,
 
 func (l *Listboard) getToken(r *http.Request) string {
 	return r.Header.Get(l.config.Token)
+}
+
+func getUrl(baseURL string, node Node) string {
+	switch node.Level {
+	case levelRoot:
+		return baseURL + "/list/" + strconv.Itoa(node.Id) + "/" + hfSlug(node.Title)
+	case levelList:
+		return baseURL + "/list/" + strconv.Itoa(node.ParentId) + "/item#I" + strconv.Itoa(node.Id)
+	default:
+		return baseURL + "/vote/" + strconv.Itoa(node.ParentId) + "/item#I" + strconv.Itoa(node.Id)
+	}
 }
