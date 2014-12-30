@@ -25,6 +25,7 @@ type Listboard struct {
 	config *Config
 	m      *Model
 	tp     *TransPool
+	sg     *SpamGuard
 }
 
 type ValidationErrors []string
@@ -42,6 +43,8 @@ func (l *Listboard) Run(args []string) {
 	if err = l.config.Load(args); err != nil {
 		panic(err)
 	}
+
+	l.sg = NewSpamGuard(l.config.PostBlockExpire)
 
 	l.m = NewModel(l.config)
 	if err = l.m.Init(l.config); err != nil {
@@ -330,6 +333,9 @@ func (l *Listboard) validateForm(r *http.Request, domainId, parentId, level int,
 		Level:    level,
 	}
 	errors := ValidationErrors{}
+	if !l.sg.CanPost(r.RemoteAddr) {
+		errors = append(errors, ln.Lang("Please wait before posting again"))
+	}
 	if len(node.Title) < 3 {
 		errors = append(errors, ln.Lang("Title must be at least 3 characters long"))
 	}

@@ -4,6 +4,7 @@
 	"dsn": "./db/test.sqlite",
 	"translations": "./translations/",
 	"token": "X-Server",
+	"post_block_expire": "10s",
 	"servers": {
 		"": {
 			"domain_id": 1,

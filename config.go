@@ -10,12 +10,13 @@ const defaultConfigFile = "./config/listboard.json"
 const defaultTemplatesBase = "./templates/default/"
 
 type Config struct {
-	Server       string                `json:"server"`
-	Database     string                `json:"database"`
-	Dsn          string                `json:"dsn"`
-	Translations string                `json:"translations"`
-	Token        string                `json:"token"`
-	Servers      map[string]SiteConfig `json:"servers"`
+	Server          string                `json:"server"`
+	Database        string                `json:"database"`
+	Dsn             string                `json:"dsn"`
+	Translations    string                `json:"translations"`
+	Token           string                `json:"token"`
+	PostBlockExpire string                `json:"post_block_expire`
+	Servers         map[string]SiteConfig `json:"servers"`
 }
 
 type SiteConfig struct {
