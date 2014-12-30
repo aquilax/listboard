@@ -44,11 +44,19 @@ func inHoneypot(t string) bool {
 
 func renderText(t string) string {
 	extensions := 0
-	extensions |= blackfriday.EXTENSION_HARD_LINE_BREAK
 	extensions |= blackfriday.HTML_USE_XHTML
 	extensions |= blackfriday.HTML_USE_SMARTYPANTS
 	extensions |= blackfriday.HTML_SMARTYPANTS_FRACTIONS
 	extensions |= blackfriday.HTML_SMARTYPANTS_LATEX_DASHES
+	extensions |= blackfriday.EXTENSION_AUTOLINK
+	extensions |= blackfriday.EXTENSION_HARD_LINE_BREAK
+	extensions |= blackfriday.EXTENSION_NO_INTRA_EMPHASIS
+	extensions |= blackfriday.EXTENSION_TABLES
+	extensions |= blackfriday.EXTENSION_FENCED_CODE
+	extensions |= blackfriday.EXTENSION_STRIKETHROUGH
+	extensions |= blackfriday.EXTENSION_SPACE_HEADERS
+	extensions |= blackfriday.EXTENSION_HEADER_IDS
+
 	htmlFlags := 0 |
 		blackfriday.HTML_USE_XHTML |
 		blackfriday.HTML_USE_SMARTYPANTS |
