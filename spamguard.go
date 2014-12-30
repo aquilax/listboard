@@ -6,14 +6,18 @@ import (
 )
 
 type SpamGuard struct {
-	duration string
+	duration time.Duration
 	posts    map[string]time.Time
 	mutex    *sync.Mutex
 }
 
 func NewSpamGuard(duration string) *SpamGuard {
+	d, err := time.ParseDuration(duration)
+	if err != nil {
+		panic(err)
+	}
 	return &SpamGuard{
-		duration: duration,
+		duration: d,
 		posts:    make(map[string]time.Time),
 		mutex:    &sync.Mutex{},
 	}
@@ -31,11 +35,7 @@ func (sg *SpamGuard) CanPost(id string) bool {
 		}
 	} else {
 		// Add to block
-		d, err := time.ParseDuration(sg.duration)
-		if err != nil {
-			panic(err)
-		}
-		sg.posts[id] = now.Add(d)
+		sg.posts[id] = now.Add(sg.duration)
 	}
 	sg.clean(now)
 	sg.mutex.Unlock()

@@ -15,7 +15,7 @@ type Config struct {
 	Dsn             string                `json:"dsn"`
 	Translations    string                `json:"translations"`
 	Token           string                `json:"token"`
-	PostBlockExpire string                `json:"post_block_expire`
+	PostBlockExpire string                `json:"post_block_expire"`
 	Servers         map[string]SiteConfig `json:"servers"`
 }
 
