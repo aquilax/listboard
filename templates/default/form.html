@@ -7,6 +7,8 @@
 	<div id="post" class="topic">
 		<h3>{{lang .FormTitle}}</h3>
 		<form method="post">
+			<input type="hidden" name="level" value="{{ .Form.Level }}" />
+			<input type="hidden" name="parent_id" value="{{ .Form.ParentId }}" />
 			<div id="namef">Leaf thiz fild aloun <input type="text" name="name" value="" id="name" /></div>
 			<table>
 				<tr>

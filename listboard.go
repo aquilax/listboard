@@ -60,6 +60,7 @@ func (l *Listboard) Run(args []string) {
 	r.HandleFunc("/sitemap.xml", appHandler(l.sitemapHandler).ServeHTTP).Methods("GET")
 
 	r.HandleFunc("/add.html", appHandler(l.addFormHandler).ServeHTTP).Methods("GET", "POST")
+	r.HandleFunc("/edit.html", appHandler(l.editFormHandler).ServeHTTP).Methods("GET", "POST")
 	r.HandleFunc("/list/{listId}/{slug}", appHandler(l.listHandler).ServeHTTP).Methods("GET", "POST")
 	r.HandleFunc("/vote/{itemId}/{slug}", appHandler(l.voteHandler).ServeHTTP).Methods("GET", "POST")
 
@@ -146,6 +147,58 @@ func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) error
 	s.AddPath("", s.Lang("New list"))
 	s.Set("Subtitle", s.Lang("New list"))
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("add.html"), sc.templatePath("form.html"))
+}
+
+func (l *Listboard) editFormHandler(w http.ResponseWriter, r *http.Request) error {
+	sc := l.config.getSiteConfig(l.getToken(r))
+
+	var errors ValidationErrors
+	var node Node
+	var item *Node
+	var nodeId int
+	var err error
+	id := r.URL.Query().Get("id")
+
+	if nodeId, err = strconv.Atoi(id); err != nil {
+		return err
+	}
+
+	tr := l.tp.Get(sc.Language)
+	if r.Method == "POST" {
+		if !inHoneypot(r.FormValue("name")) {
+			level := 0
+			parentId := 0
+			if level, err = strconv.Atoi(r.FormValue("level")); err != nil {
+				level = 0
+			}
+			if parentId, err = strconv.Atoi(r.FormValue("parent_id")); err != nil {
+				level = 0
+			}
+			node, errors = l.validateForm(r, sc.DomainId, parentId, level, tr)
+			if len(errors) == 0 {
+				node.Id = nodeId
+				// save and redirect
+				if err := l.m.editNode(&node); err != nil {
+					return &HTTPError{Err: err, Code: http.StatusInternalServerError}
+				}
+				url := getUrl("http://"+r.Host, node)
+				http.Redirect(w, r, url, http.StatusFound)
+			}
+		}
+	}
+
+	item, err = l.m.getNode(sc.DomainId, nodeId)
+	if err != nil {
+		return err
+	}
+
+	s := NewSession(sc, tr)
+	s.Set("Errors", errors)
+	s.Set("Form", item)
+	s.AddPath("/", s.Lang("Home"))
+	s.AddPath("", s.Lang("Edit"))
+	s.Set("Subtitle", s.Lang("Edit"))
+	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("edit.html"), sc.templatePath("form.html"))
 }
 
 func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) error {

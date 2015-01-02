@@ -170,3 +170,24 @@ func (m *Model) Vote(domainId, vote, id, itemId, listId int) error {
 	}
 	return nil
 }
+
+func (m *Model) editNode(node *Node) error {
+	_, err := m.db.NamedExec(`UPDATE node SET
+			title = :title,
+			body = :body,
+			rendered = :rendered,
+			updated = :updated
+			WHERE id = :id
+			AND domain_id = :domain_id
+			AND tripcode = :tripcode`,
+		map[string]interface{}{
+			"title":     node.Title,
+			"body":      node.Body,
+			"rendered":  string(node.Rendered),
+			"updated":   time.Now(),
+			"id":        node.Id,
+			"domain_id": node.DomainId,
+			"tripcode":  node.Tripcode,
+		})
+	return err
+}

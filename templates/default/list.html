@@ -7,7 +7,7 @@
 			</div>
 		</div>
 		<div class="meta ar">
-			{{if .List.Tripcode}} [<b>{{.List.Tripcode}}</b>]{{end}}
+			{{if .List.Tripcode}} [<b>{{.List.Tripcode}}</b>] [<a href="/edit.html?id={{.List.Id}}" rel="nofollow">{{lang "edit"}}</a>]{{end}}
 			<em>{{ time .List.Created }}</em>
 		</div>
 	</div>
@@ -24,7 +24,7 @@
 					</div>
 				</div>
 				<div class="meta ar">
-					{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>]{{end}}
+					{{if $item.Tripcode}} [<b>{{$item.Tripcode}}</b>] [<a href="/edit.html?id={{$item.Id}}" rel="nofollow">{{lang "edit"}}</a>]{{end}}
 					[ <a href="/vote/{{$item.Id}}/{{slug $item.Title}}#post">{{lang "vote"}}</a> ]
 					{{lang "rating"}}: <b>{{$item.Vote}}</b> |
 					<em>{{ time $item.Created }}</em>
