@@ -28,11 +28,10 @@ hr{border:none; border-top:1px solid #aeaeae}
 .tbl th a{color:#000}
 .topic{background-color:#fff;border: 1px solid #ddd; margin: 1em 0}
 .topic h3, .topic h3 a{color:#D14836;}
-.topic h3{ padding: .4em 0; margin:0}
 .topi{padding:0}
 .topi blockquote{background-color:#f5f5f5; padding:1em;border: 1px dashed #bfbf8f}
 .social{float:right;}
-.meta{background:#E6E6E6; padding: .4em;}
+.meta{background:#E6E6E6; padding: .4em; clear: both}
 .fr{float:right}
 .tbl th a.new_topic{color: #f00;}
 .thumb{cursor: pointer;}
@@ -46,3 +45,4 @@ h3:hover a.ref, h4:hover a.ref {color:#cecece;}
 img{max-width:100%;height:auto;}
 .pagination ul{display: inline-block;padding:0; margin: 0}
 .pagination ul li{display: inline;}
+.avatar {float:left; margin: 0 1em 1em 0;height:80px;width:80px}

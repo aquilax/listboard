@@ -3,6 +3,7 @@
 
 	<div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
 		<div class="article">
+			<img class="avatar" src="{{ gravatar .List.Tripcode }}" />
 			<h3 id="{{.List.Id}}"><a href="/list/{{.List.Id}}/{{slug .List.Title}}">{{.List.Title}}</a></h3>
 			<div class="txt" itemprop="articleBody">
 				{{.List.GetRendered}}
@@ -17,6 +18,7 @@
 		<li>
 			<div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
 				<div class="article">
+					<img class="avatar" src="{{ gravatar .Item.Tripcode }}" />
 					<h3 id="{{.Item.Id}}">{{.Item.Title}} <a class="ref" href="/vote/{{.Item.Id}}/{{slug .Item.Title}}">#{{.Item.Id}}</a></h3>
 					<div class="txt" itemprop="articleBody">
 						{{.Item.GetRendered}}
@@ -34,6 +36,7 @@
 				<li>
 					<div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
 						<div class="article">
+							<img class="avatar" src="{{ gravatar $item.Tripcode }}" />
 							<h4 id="I{{$item.Id}}">{{$item.Title}} <a class="ref" href="/vote/{{$.Item.Id}}/{{slug $.Item.Title}}#I{{$item.Id}}">#{{$item.Id}}</a></h4>
 							<div class="txt" itemprop="articleBody">
 								{{$item.GetRendered}}

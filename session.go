@@ -42,10 +42,11 @@ func NewTemplateData(sc *SiteConfig) TemplateData {
 
 func (s *Session) getHelpers() template.FuncMap {
 	return template.FuncMap{
-		"lang": s.Lang,
-		"time": hfTime,
-		"slug": hfSlug,
-		"mod":  hfMod,
+		"lang":     s.Lang,
+		"time":     hfTime,
+		"slug":     hfSlug,
+		"mod":      hfMod,
+		"gravatar": hfGravatar,
 	}
 }
 

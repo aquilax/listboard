@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"time"
 
 	"github.com/aquilax/tripcode"
@@ -65,4 +67,12 @@ func renderText(t string) string {
 	renderer := blackfriday.HtmlRenderer(htmlFlags, "", "")
 	unsafe := blackfriday.Markdown([]byte(t), renderer, extensions)
 	return string(bluemonday.UGCPolicy().SanitizeBytes(unsafe))
+}
+
+func hfGravatar(tripcode string) string {
+	if tripcode == "" {
+		return "http://www.gravatar.com/avatar/00000000000000000000000000000000?d=retro"
+	}
+	hash := md5.Sum([]byte(tripcode))
+	return "http://www.gravatar.com/avatar/" + hex.EncodeToString(hash[:]) + "?d=retro"
 }
