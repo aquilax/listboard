@@ -2,7 +2,7 @@
 	<div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
 		<div class="article">
 			<img class="avatar" src="{{ gravatar .List.Tripcode }}" />
-			<h3 itemprop="name" id="{{.List.Id}}">{{.List.Title}} <a class="ref" href="/list/{{.List.Id}}/{{slug .List.Title}}">#{{.List.Id}}</a></h4>
+			<h3 id="{{.List.Id}}"><span itemprop="name">{{.List.Title}}</span> <a class="ref" href="/list/{{.List.Id}}/{{slug .List.Title}}">#{{.List.Id}}</a></h4>
 			<div class="txt" itemprop="articleBody">
 				{{.List.GetRendered}}
 			</div>
@@ -20,7 +20,7 @@
 			<div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
 				<div class="article">
 					<img class="avatar" src="{{ gravatar $item.Tripcode }}" />
-					<h4 itemprop="name" id="I{{$item.Id}}">{{$item.Title}} <a class="ref" href="/list/{{$.List.Id}}/{{slug $.List.Title}}#I{{$item.Id}}">#{{$item.Id}}</a></h4>
+					<h4 id="I{{$item.Id}}"><span itemprop="name">{{$item.Title}}</span> <a class="ref" href="/list/{{$.List.Id}}/{{slug $.List.Title}}#I{{$item.Id}}">#{{$item.Id}}</a></h4>
 					<div class="txt" itemprop="articleBody">
 						{{$item.GetRendered}}
 					</div>
