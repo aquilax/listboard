@@ -113,7 +113,7 @@ func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) error {
 	s.Set("Pagination", Pagination(&PagConfig{
 		page:  page + 1,
 		ipp:   itemsPerPage,
-		total: l.m.mustGetTotal(0),
+		total: l.m.mustGetTotal(sc.DomainId, 0),
 		url:   "?",
 		param: "page",
 	}))
@@ -249,7 +249,7 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) error {
 	s.Set("Pagination", Pagination(&PagConfig{
 		page:  page + 1,
 		ipp:   itemsPerPage,
-		total: l.m.mustGetTotal(listId),
+		total: l.m.mustGetTotal(sc.DomainId, listId),
 		url:   "?",
 		param: "page",
 	}))

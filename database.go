@@ -83,14 +83,14 @@ func (m *Model) mustGetAllNodes(domainId, count, offset int, orderBy string) *No
 	return nl
 }
 
-func (m *Model) getTotal(parentNodeId int) (int, error) {
+func (m *Model) getTotal(domainId, parentNodeId int) (int, error) {
 	var total int
-	err := m.db.Get(&total, "SELECT count(*) FROM node WHERE parent_id=$1 AND status=1", parentNodeId)
+	err := m.db.Get(&total, "SELECT count(*) FROM node WHERE domain_id=$1 AND parent_id=$1 AND status=1", domainId, parentNodeId)
 	return total, err
 }
 
-func (m *Model) mustGetTotal(parentNodeId int) int {
-	total, err := m.getTotal(parentNodeId)
+func (m *Model) mustGetTotal(domainId, parentNodeId int) int {
+	total, err := m.getTotal(domainId, parentNodeId)
 	if err != nil {
 		panic(err)
 	}
