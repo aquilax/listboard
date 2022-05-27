@@ -1,6 +1,6 @@
 {
-	"server": ":8080",
-	"database": "sqlite3",
+	"server": ":8081",
+	"database": "sqlite",
 	"dsn": "./db/test.sqlite",
 	"translations": "./translations/",
 	"token": "X-Server",
