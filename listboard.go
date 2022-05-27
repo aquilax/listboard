@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/gorilla/feeds"
+	"github.com/gorilla/feeds"
 	"github.com/gorilla/mux"
 	"github.com/sourcegraph/sitemap"
 )
@@ -63,7 +63,7 @@ func (l *ListBoard) Run(args []string) {
 	r := mux.NewRouter()
 	r.HandleFunc("/", appHandler(l.indexHandler).ServeHTTP).Methods("GET")
 	r.HandleFunc("/feed.xml", appHandler(l.feedHandler).ServeHTTP).Methods("GET")
-	r.HandleFunc("/all.xml", appHandler(l.feedAlllHandler).ServeHTTP).Methods("GET")
+	r.HandleFunc("/all.xml", appHandler(l.feedAllHandler).ServeHTTP).Methods("GET")
 	r.HandleFunc("/sitemap.xml", appHandler(l.sitemapHandler).ServeHTTP).Methods("GET")
 
 	r.HandleFunc("/add.html", appHandler(l.addFormHandler).ServeHTTP).Methods("GET", "POST")
@@ -332,17 +332,17 @@ func (l *ListBoard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (l *ListBoard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, nodes *NodeList) error {
-	feed := &Feed{
+	feed := &feeds.Feed{
 		Title:       sc.Title,
-		Link:        &Link{Href: baseURL},
+		Link:        &feeds.Link{Href: baseURL},
 		Description: sc.Description,
-		Author:      &Author{sc.AuthorName, sc.AuthorEmail},
+		Author:      &feeds.Author{Name: sc.AuthorName, Email: sc.AuthorEmail},
 		Created:     time.Now(),
 	}
 	for _, node := range *nodes {
-		feed.Items = append(feed.Items, &Item{
+		feed.Items = append(feed.Items, &feeds.Item{
 			Title:       node.Title,
-			Link:        &Link{Href: getUrl(baseURL, node)},
+			Link:        &feeds.Link{Href: getUrl(baseURL, node)},
 			Description: string(node.Rendered),
 			Created:     node.Created,
 		})
@@ -358,7 +358,7 @@ func (l *ListBoard) feedHandler(w http.ResponseWriter, r *http.Request) error {
 	return l.feed(w, sc, baseUrl, nodes)
 }
 
-func (l *ListBoard) feedAlllHandler(w http.ResponseWriter, r *http.Request) error {
+func (l *ListBoard) feedAllHandler(w http.ResponseWriter, r *http.Request) error {
 	sc := l.config.getSiteConfig(l.getToken(r))
 	nodes := l.m.mustGetAllNodes(sc.DomainId, 20, 0, "created DESC")
 	baseUrl := "http://" + r.Host

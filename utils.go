@@ -38,10 +38,7 @@ func getVote(t string) int {
 }
 
 func inHoneypot(t string) bool {
-	if len(t) > 0 {
-		return true
-	}
-	return false
+	return len(t) > 0
 }
 
 func renderText(t string) string {

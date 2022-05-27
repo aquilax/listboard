@@ -51,7 +51,11 @@ func (n *Node) Url() string {
 
 func (m *Model) Init(config *Config) error {
 	var err error
-	m.db, err = sqlx.Open(config.Database, config.Dsn)
+	var database = config.Database
+	if database == "sqlite3" {
+		database = "sqlite" // modernc.org/sqlite uses sqlite
+	}
+	m.db, err = sqlx.Open(database, config.Dsn)
 	return err
 }
 
