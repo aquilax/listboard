@@ -11,9 +11,9 @@ type Page struct {
 	URL string
 }
 
-type Pages []*Page
+type Pages []Page
 
-type PagConfig struct {
+type PaginationConfig struct {
 	ipp   int
 	page  int
 	total int
@@ -21,11 +21,12 @@ type PagConfig struct {
 	param string
 }
 
-func Pagination(pc *PagConfig) *Pages {
+func Pagination(pc PaginationConfig) Pages {
+	pCount := int(math.Ceil(float64(pc.total) / float64(pc.ipp)))
 	if pc.total <= pc.ipp {
-		return nil
+		return make(Pages, 0)
 	}
-	var pages Pages
+	pages := make(Pages, pCount)
 	// Normalize first page
 	if pc.page == 0 {
 		pc.page = 1
@@ -33,7 +34,7 @@ func Pagination(pc *PagConfig) *Pages {
 	pUrl, _ := url.Parse(pc.url)
 	val := pUrl.Query()
 	// Number of pages
-	pCount := int(math.Ceil(float64(pc.total) / float64(pc.ipp)))
+
 	for i := 1; i <= pCount; i++ {
 		// Don't set the url for the current page
 		tURL := ""
@@ -42,7 +43,7 @@ func Pagination(pc *PagConfig) *Pages {
 			pUrl.RawQuery = val.Encode()
 			tURL = pUrl.String()
 		}
-		pages = append(pages, &Page{i, tURL})
+		pages[i-1] = Page{i, tURL}
 	}
-	return &pages
+	return pages
 }

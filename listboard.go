@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -21,7 +22,7 @@ const (
 	levelVote
 )
 
-type Listboard struct {
+type ListBoard struct {
 	config *Config
 	m      *Model
 	tp     *TransPool
@@ -32,12 +33,18 @@ type ValidationErrors []string
 
 type appHandler func(http.ResponseWriter, *http.Request) error
 
-func NewListboard() *Listboard {
-	return &Listboard{}
+func NewListBoard() *ListBoard {
+	return &ListBoard{}
 }
 
-func (l *Listboard) Run(args []string) {
+func (l *ListBoard) Run(args []string) {
 	var err error
+
+	if os.Getenv("GO_ENV") != "" {
+		log.SetFlags(0)
+	} else {
+		log.SetFlags(log.Ldate | log.Ltime | log.LUTC)
+	}
 
 	l.config = NewConfig()
 	if err = l.config.Load(args); err != nil {
@@ -69,8 +76,13 @@ func (l *Listboard) Run(args []string) {
 
 	http.Handle("/", r)
 
-	log.Printf("Starting server at %s", l.config.Server)
-	if err := http.ListenAndServe(l.config.Server, nil); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = l.config.Server
+	}
+
+	log.Printf("Starting server at %s", port)
+	if err := http.ListenAndServe(port, nil); err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
 }
@@ -104,13 +116,13 @@ func getPageNumber(pageStr string) int {
 	return page - 1
 }
 
-func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) error {
+func (l *ListBoard) indexHandler(w http.ResponseWriter, r *http.Request) error {
 	page := getPageNumber(r.URL.Query().Get("page"))
 	sc := l.config.getSiteConfig(l.getToken(r))
 	s := NewSession(sc, l.tp.Get(sc.Language))
 	s.AddPath("", s.Lang("Home"))
 	s.Set("Lists", l.m.mustGetChildNodes(sc.DomainId, 0, itemsPerPage, (page*itemsPerPage), "updated DESC"))
-	s.Set("Pagination", Pagination(&PagConfig{
+	s.Set("Pagination", Pagination(PaginationConfig{
 		page:  page + 1,
 		ipp:   itemsPerPage,
 		total: l.m.mustGetTotal(sc.DomainId, 0),
@@ -120,7 +132,7 @@ func (l *Listboard) indexHandler(w http.ResponseWriter, r *http.Request) error {
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("index.html"))
 }
 
-func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) error {
+func (l *ListBoard) addFormHandler(w http.ResponseWriter, r *http.Request) error {
 	sc := l.config.getSiteConfig(l.getToken(r))
 
 	var errors ValidationErrors
@@ -149,7 +161,7 @@ func (l *Listboard) addFormHandler(w http.ResponseWriter, r *http.Request) error
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("add.html"), sc.templatePath("form.html"))
 }
 
-func (l *Listboard) editFormHandler(w http.ResponseWriter, r *http.Request) error {
+func (l *ListBoard) editFormHandler(w http.ResponseWriter, r *http.Request) error {
 	sc := l.config.getSiteConfig(l.getToken(r))
 
 	var errors ValidationErrors
@@ -201,7 +213,7 @@ func (l *Listboard) editFormHandler(w http.ResponseWriter, r *http.Request) erro
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("edit.html"), sc.templatePath("form.html"))
 }
 
-func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) error {
+func (l *ListBoard) listHandler(w http.ResponseWriter, r *http.Request) error {
 	vars := mux.Vars(r)
 	listId, err := strconv.Atoi(vars["listId"])
 	if err != nil {
@@ -246,7 +258,7 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) error {
 	s.Set("FormTitle", s.Lang("New suggestion"))
 	s.Set("Subtitle", list.Title)
 	s.Set("Description", list.Title)
-	s.Set("Pagination", Pagination(&PagConfig{
+	s.Set("Pagination", Pagination(PaginationConfig{
 		page:  page + 1,
 		ipp:   itemsPerPage,
 		total: l.m.mustGetTotal(sc.DomainId, listId),
@@ -258,7 +270,7 @@ func (l *Listboard) listHandler(w http.ResponseWriter, r *http.Request) error {
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("list.html"), sc.templatePath("form.html"))
 }
 
-func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) error {
+func (l *ListBoard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 	vars := mux.Vars(r)
 	itemId, err := strconv.Atoi(vars["itemId"])
 	if err != nil {
@@ -319,7 +331,7 @@ func (l *Listboard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("vote.html"), sc.templatePath("form.html"))
 }
 
-func (l *Listboard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, nodes *NodeList) error {
+func (l *ListBoard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, nodes *NodeList) error {
 	feed := &Feed{
 		Title:       sc.Title,
 		Link:        &Link{Href: baseURL},
@@ -339,21 +351,21 @@ func (l *Listboard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, 
 	return feed.WriteRss(w)
 }
 
-func (l *Listboard) feedHandler(w http.ResponseWriter, r *http.Request) error {
+func (l *ListBoard) feedHandler(w http.ResponseWriter, r *http.Request) error {
 	sc := l.config.getSiteConfig(l.getToken(r))
 	nodes := l.m.mustGetChildNodes(sc.DomainId, 0, 20, 0, "created DESC")
 	baseUrl := "http://" + r.Host
 	return l.feed(w, sc, baseUrl, nodes)
 }
 
-func (l *Listboard) feedAlllHandler(w http.ResponseWriter, r *http.Request) error {
+func (l *ListBoard) feedAlllHandler(w http.ResponseWriter, r *http.Request) error {
 	sc := l.config.getSiteConfig(l.getToken(r))
 	nodes := l.m.mustGetAllNodes(sc.DomainId, 20, 0, "created DESC")
 	baseUrl := "http://" + r.Host
 	return l.feed(w, sc, baseUrl, nodes)
 }
 
-func (l *Listboard) sitemapHandler(w http.ResponseWriter, r *http.Request) error {
+func (l *ListBoard) sitemapHandler(w http.ResponseWriter, r *http.Request) error {
 	sc := l.config.getSiteConfig(l.getToken(r))
 	nodes := l.m.mustGetChildNodes(sc.DomainId, 0, 1000, 0, "created")
 	var urlSet sitemap.URLSet
@@ -374,7 +386,7 @@ func (l *Listboard) sitemapHandler(w http.ResponseWriter, r *http.Request) error
 	return err
 }
 
-func (l *Listboard) validateForm(r *http.Request, domainId, parentId, level int, ln *Language) (Node, ValidationErrors) {
+func (l *ListBoard) validateForm(r *http.Request, domainId, parentId, level int, ln *Language) (Node, ValidationErrors) {
 	node := Node{
 		ParentId: parentId,
 		DomainId: domainId,
@@ -404,7 +416,7 @@ func (l *Listboard) validateForm(r *http.Request, domainId, parentId, level int,
 	return node, errors
 }
 
-func (l *Listboard) getToken(r *http.Request) string {
+func (l *ListBoard) getToken(r *http.Request) string {
 	return r.Header.Get(l.config.Token)
 }
 

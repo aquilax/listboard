@@ -10,24 +10,21 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/microcosm-cc/bluemonday v1.0.18
 	github.com/russross/blackfriday v1.6.0
-	github.com/smartystreets/goconvey v1.7.2
 	github.com/sourcegraph/sitemap v0.0.0-20171024204827-24a7b21aa1d8
 	modernc.org/sqlite v1.17.3
 )
 
 require (
 	github.com/aymerick/douceur v0.2.0 // indirect
+	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
-	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-sqlite3 v1.14.13 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
-	github.com/smartystreets/assertions v1.13.0 // indirect
 	gitlab.com/nyarla/go-crypt v0.0.0-20160106005555-d9a5dc2b789b // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/net v0.0.0-20220526153639-5463443f8c37 // indirect

@@ -14,7 +14,7 @@
 			"css": "style.css",
 			"title": "Default site",
 			"description": "This is the default listboard site",
-			"author_name": "Examle Author",
+			"author_name": "Example Author",
 			"author_email": "Example Email",
 			"post_header": "PostHeader",
 			"pre_footer": "PreFooter"
