@@ -1,6 +1,6 @@
 BEGIN TRANSACTION;
 CREATE TABLE IF NOT EXISTS node (
-	id INTEGER PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY NOT NULL,
     parent_id INTEGER NOT NULL DEFAULT 0,
     domain_id smallint DEFAULT 0,
     title character varying(150) DEFAULT '',
