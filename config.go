@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+
+	"github.com/aquilax/listboard/node"
 )
 
 const defaultConfigFile = "./config/listboard.json"
@@ -20,18 +22,18 @@ type Config struct {
 }
 
 type SiteConfig struct {
-	DomainId    int    `json:"domain_id"`
-	Analytics   string `json:"analytics"`
-	Domain      string `json:"domain"`
-	Language    string `json:"language"`
-	Css         string `json:"css"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	AuthorName  string `json:"author_name"`
-	AuthorEmail string `json:"author_email"`
-	PostHeader  string `json:"post_header"`
-	PreFooter   string `json:"pre_footer"`
-	Templates   string `json:"templates"`
+	DomainID    node.DomainID `json:"domain_id"`
+	Analytics   string        `json:"analytics"`
+	Domain      string        `json:"domain"`
+	Language    string        `json:"language"`
+	Css         string        `json:"css"`
+	Title       string        `json:"title"`
+	Description string        `json:"description"`
+	AuthorName  string        `json:"author_name"`
+	AuthorEmail string        `json:"author_email"`
+	PostHeader  string        `json:"post_header"`
+	PreFooter   string        `json:"pre_footer"`
+	Templates   string        `json:"templates"`
 }
 
 func NewConfig() *Config {

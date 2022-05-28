@@ -7,7 +7,7 @@
 	"post_block_expire": "10s",
 	"servers": {
 		"": {
-			"domain_id": 1,
+			"domain_id": "1",
 			"analytics": "UA-X",
 			"domain": "example.com",
 			"language": "en_US",

@@ -8,7 +8,7 @@
 		<h3>{{lang .FormTitle}}</h3>
 		<form method="post">
 			<input type="hidden" name="level" value="{{ .Form.Level }}" />
-			<input type="hidden" name="parent_id" value="{{ .Form.ParentId }}" />
+			<input type="hidden" name="parent_id" value="{{ .Form.ParentID }}" />
 			<div id="namef">Leaf thiz fild aloun <input type="text" name="name" value="" id="name" /></div>
 			<table>
 				<tr>
@@ -29,12 +29,6 @@
 					</td>
 				</tr>
 				{{end}}
-				<tr>
-					<td colspan="2">
-						<button type="button" tabindex="-1" onclick="document.getElementById('imageUpload').click();return false;">{{lang "Image"}}</button>
-						<input id="imageUpload" style="visibility: collapse; width: 0px;" type="file" onchange="upload(this.files[0])">  
-					</td>
-				</tr> 
 				<tr>
 					<td colspan="2">
 						<textarea id="textarea" name="body" cols="60" rows="10">{{ .Form.Body }}</textarea>
