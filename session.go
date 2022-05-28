@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
+
+	"github.com/aquilax/listboard/node"
 )
 
 type PathLink struct {
@@ -47,6 +50,19 @@ func (s *Session) getHelpers() template.FuncMap {
 		"slug":     hfSlug,
 		"mod":      hfMod,
 		"gravatar": hfGravatar,
+		"rawHTML": func(value string) template.HTML {
+			return template.HTML(fmt.Sprint(value))
+		},
+		"getUrl": func(n node.Node) string {
+			switch n.Level {
+			case 0:
+				return "/list/" + n.ID + hfSlug(n.Title)
+			case 1:
+				return "/vote/" + n.ParentID + n.ID + "/vote.html"
+			default:
+				return "/list/" + n.ID + hfSlug(n.Title)
+			}
+		},
 	}
 }
 
@@ -58,7 +74,7 @@ func (s *Session) render(w http.ResponseWriter, r *http.Request, filenames ...st
 	t := template.New("layout.html")
 	// Add helper functions
 	t.Funcs(s.getHelpers())
-	// Add pad
+	// Add path
 	s.td.Set("Path", s.path)
 	return template.Must(t.ParseFiles(filenames...)).Execute(w, s.td)
 }

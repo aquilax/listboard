@@ -1,7 +1,6 @@
 package node
 
 import (
-	"html/template"
 	"time"
 )
 
@@ -26,23 +25,3 @@ type Node struct {
 }
 
 type NodeList []Node
-
-func (n *Node) GetRendered() template.HTML {
-	return template.HTML(n.Rendered)
-}
-
-func (n *Node) Url() string {
-	switch n.Level {
-	case 0:
-		return "/list/" + n.ID + hfSlug(n.Title)
-	case 1:
-		return "/vote/" + n.ParentID + n.ID + "/vote.html"
-	default:
-		return "/list/" + n.ID + hfSlug(n.Title)
-	}
-}
-
-func hfSlug(t string) string {
-	// TODO: FIXME
-	return t
-}

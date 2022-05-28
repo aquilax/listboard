@@ -147,11 +147,11 @@ func (l *ListBoard) addFormHandler(w http.ResponseWriter, r *http.Request) error
 			n, errors = l.validateForm(r, sc.DomainID, node.RootNodeID, levelRoot, tr)
 			if len(errors) == 0 {
 				// save and redirect
-				id, err := l.m.addNode(&n)
+				nodeID, err := l.m.addNode(&n)
 				if err != nil {
 					return &HTTPError{Err: err, Code: http.StatusInternalServerError}
 				}
-				url := "/list/" + strconv.Itoa(id) + "/" + hfSlug(n.Title)
+				url := "/list/" + nodeID + "/" + hfSlug(n.Title)
 				http.Redirect(w, r, url, http.StatusFound)
 			}
 		}
@@ -226,7 +226,7 @@ func (l *ListBoard) listHandler(w http.ResponseWriter, r *http.Request) error {
 			n, errors = l.validateForm(r, sc.DomainID, listID, levelList, tr)
 			if len(errors) == 0 {
 				// save and redirect
-				id, err := l.m.addNode(&n)
+				nodeID, err := l.m.addNode(&n)
 				if err != nil {
 					return &HTTPError{
 						Err:     err,
@@ -234,7 +234,7 @@ func (l *ListBoard) listHandler(w http.ResponseWriter, r *http.Request) error {
 						Code:    http.StatusInternalServerError,
 					}
 				}
-				url := "/list/" + listID + "/" + hfSlug(n.Title) + "#I" + strconv.Itoa(id)
+				url := "/list/" + listID + "/" + hfSlug(n.Title) + "#I" + nodeID
 				http.Redirect(w, r, url, http.StatusFound)
 			}
 		}
@@ -281,7 +281,7 @@ func (l *ListBoard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 		if !inHoneypot(r.FormValue("name")) {
 			n, errors = l.validateForm(r, sc.DomainID, itemID, levelVote, tr)
 			if len(errors) == 0 {
-				id, err := l.m.addNode(&n)
+				nodeID, err := l.m.addNode(&n)
 				if err != nil {
 					return &HTTPError{
 						Err:     err,
@@ -289,14 +289,14 @@ func (l *ListBoard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 						Code:    http.StatusInternalServerError,
 					}
 				}
-				if err := l.m.Vote(sc.DomainID, n.Vote, id, itemID, item.ParentID); err != nil {
+				if err := l.m.Vote(sc.DomainID, n.Vote, nodeID, itemID, item.ParentID); err != nil {
 					return &HTTPError{
 						Err:     err,
 						Message: err.Error(),
 						Code:    http.StatusInternalServerError,
 					}
 				}
-				http.Redirect(w, r, r.URL.String()+"#I"+strconv.Itoa(id), http.StatusFound)
+				http.Redirect(w, r, r.URL.String()+"#I"+nodeID, http.StatusFound)
 			}
 		}
 	}

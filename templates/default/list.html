@@ -4,7 +4,7 @@
 			<img class="avatar" src="{{ gravatar .List.TripCode }}" />
 			<h3 id="{{.List.ID}}"><span itemprop="name">{{.List.Title}}</span> <a class="ref" href="/list/{{.List.ID}}/{{slug .List.Title}}">#{{.List.ID}}</a></h4>
 			<div class="txt" itemprop="articleBody">
-				{{.List.GetRendered}}
+				{{ rawHTML .List.Rendered }}
 			</div>
 		</div>
 		<div class="meta ar">
@@ -22,7 +22,7 @@
 					<img class="avatar" src="{{ gravatar $item.TripCode }}" />
 					<h4 id="I{{$item.ID}}"><span itemprop="name">{{$item.Title}}</span> <a class="ref" href="/list/{{$.List.ID}}/{{slug $.List.Title}}#I{{$item.ID}}">#{{$item.ID}}</a></h4>
 					<div class="txt" itemprop="articleBody">
-						{{$item.GetRendered}}
+						{{ rawHTML $item.Rendered}}
 					</div>
 				</div>
 				<div class="meta ar">

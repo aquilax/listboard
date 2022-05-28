@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/aquilax/listboard/database"
 	"github.com/aquilax/listboard/node"
 )
@@ -41,21 +43,24 @@ func (m *Model) getNode(domainID node.DomainID, nodeID node.NodeID) (*node.Node,
 	return m.db.GetNode(domainID, nodeID)
 }
 
-func (m *Model) addNode(node *node.Node) (int, error) {
+func (m *Model) addNode(node *node.Node) (node.NodeID, error) {
+	node.Created = time.Now()
+	node.Updated = time.Now()
 	return m.db.AddNode(node)
 }
 
-func (m *Model) Vote(domainID node.DomainID, vote, id int, itemID, listID node.NodeID) error {
-	if err := m.db.BumpVote(domainID, itemID, vote); err != nil {
+func (m *Model) Vote(domainID node.DomainID, vote int, id node.NodeID, itemID, listID node.NodeID) error {
+	if err := m.db.BumpVote(domainID, itemID, vote, time.Now()); err != nil {
 		return err
 	}
 	// parent holds total number of votes
-	if err := m.db.BumpVote(domainID, itemID, 1); err != nil {
+	if err := m.db.BumpVote(domainID, itemID, 1, time.Now()); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (m *Model) editNode(node *node.Node) error {
+	node.Updated = time.Now()
 	return m.db.EditNode(node)
 }
