@@ -49,12 +49,12 @@ func (m *Model) addNode(node *node.Node) (node.NodeID, error) {
 	return m.db.AddNode(node)
 }
 
-func (m *Model) Vote(domainID node.DomainID, vote int, id node.NodeID, itemID, listID node.NodeID) error {
-	if err := m.db.BumpVote(domainID, itemID, vote, time.Now()); err != nil {
+func (m *Model) Vote(domainID node.DomainID, vote int, nodeID, parentID, grandParentID node.NodeID) error {
+	if err := m.db.BumpVote(domainID, parentID, vote, time.Now()); err != nil {
 		return err
 	}
 	// parent holds total number of votes
-	if err := m.db.BumpVote(domainID, itemID, 1, time.Now()); err != nil {
+	if err := m.db.BumpVote(domainID, grandParentID, 1, time.Now()); err != nil {
 		return err
 	}
 	return nil

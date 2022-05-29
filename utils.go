@@ -3,20 +3,24 @@ package main
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"log"
+	"strconv"
 	"time"
 
 	"github.com/aquilax/tripcode"
 	"github.com/gosimple/slug"
 	"github.com/microcosm-cc/bluemonday"
-	"github.com/russross/blackfriday"
+	"github.com/russross/blackfriday/v2"
 )
 
 func hfTime(t time.Time) string {
 	return t.Format("01.02.2006 15:04")
 }
 
-func hfSlug(s string) string {
-	return slug.Make(s) + ".html"
+func getLanguageSlug(lang string) func(s string) string {
+	return func(s string) string {
+		return slug.MakeLang(s, lang)
+	}
 }
 
 func hfMod(n int, mod int) int {
@@ -42,34 +46,27 @@ func inHoneypot(t string) bool {
 }
 
 func renderText(t string) string {
-	extensions := 0
-	extensions |= blackfriday.HTML_USE_XHTML
-	extensions |= blackfriday.HTML_USE_SMARTYPANTS
-	extensions |= blackfriday.HTML_SMARTYPANTS_FRACTIONS
-	extensions |= blackfriday.HTML_SMARTYPANTS_LATEX_DASHES
-	extensions |= blackfriday.EXTENSION_AUTOLINK
-	extensions |= blackfriday.EXTENSION_HARD_LINE_BREAK
-	extensions |= blackfriday.EXTENSION_NO_INTRA_EMPHASIS
-	extensions |= blackfriday.EXTENSION_TABLES
-	extensions |= blackfriday.EXTENSION_FENCED_CODE
-	extensions |= blackfriday.EXTENSION_STRIKETHROUGH
-	extensions |= blackfriday.EXTENSION_SPACE_HEADERS
-	extensions |= blackfriday.EXTENSION_HEADER_IDS
-
-	htmlFlags := 0 |
-		blackfriday.HTML_USE_XHTML |
-		blackfriday.HTML_USE_SMARTYPANTS |
-		blackfriday.HTML_SMARTYPANTS_FRACTIONS
-
-	renderer := blackfriday.HtmlRenderer(htmlFlags, "", "")
-	unsafe := blackfriday.Markdown([]byte(t), renderer, extensions)
+	unsafe := blackfriday.Run([]byte(t))
 	return string(bluemonday.UGCPolicy().SanitizeBytes(unsafe))
 }
 
-func hfGravatar(tripcode string) string {
-	if tripcode == "" {
+func hfGravatar(tripCode string) string {
+	if tripCode == "" {
 		return "http://www.gravatar.com/avatar/00000000000000000000000000000000?d=retro"
 	}
-	hash := md5.Sum([]byte(tripcode))
+	hash := md5.Sum([]byte(tripCode))
 	return "http://www.gravatar.com/avatar/" + hex.EncodeToString(hash[:]) + "?d=retro"
+}
+
+func getPageNumber(pageStr string) int {
+	page := 1
+	var err error
+	if len(pageStr) != 0 {
+		page, err = strconv.Atoi(pageStr)
+		if err != nil {
+			log.Printf("%s is not a valid page number", pageStr)
+			page = 1
+		}
+	}
+	return page - 1
 }

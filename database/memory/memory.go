@@ -35,7 +35,7 @@ func find(nl node.NodeList, filter func(n node.Node) bool) node.NodeList {
 	return result
 }
 
-func (m Memory) Init(database, dsn string) error {
+func (m Memory) Open(database, dsn string) error {
 	return nil
 }
 
@@ -80,13 +80,24 @@ func (m *Memory) AddNode(node *node.Node) (node.NodeID, error) {
 	return node.ID, nil
 }
 
-func (m *Memory) BumpVote(domainID node.DomainID, id node.NodeID, vote int, updatedAt time.Time) error {
-	//TODO:
+func (m *Memory) BumpVote(domainID node.DomainID, nodeID node.NodeID, vote int, updatedAt time.Time) error {
+	for i := range m.nl {
+		if m.nl[i].DomainID == domainID && m.nl[i].ID == nodeID {
+			m.nl[i].Vote = m.nl[i].Vote + vote
+			m.nl[i].Updated = updatedAt
+			return nil
+		}
+	}
 	return nil
 }
 
-func (m *Memory) EditNode(node *node.Node) error {
-	//TODO:
+func (m *Memory) EditNode(n *node.Node) error {
+	for i := range m.nl {
+		if m.nl[i].ID == n.ID {
+			m.nl[i] = *n
+			return nil
+		}
+	}
 	return nil
 }
 

@@ -11,7 +11,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.2.0
 	github.com/microcosm-cc/bluemonday v1.0.18
-	github.com/russross/blackfriday v1.6.0
+	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sourcegraph/sitemap v0.0.0-20171024204827-24a7b21aa1d8
 	modernc.org/sqlite v1.17.3
 )
@@ -43,3 +43,5 @@ require (
 	modernc.org/strutil v1.1.2 // indirect
 	modernc.org/token v1.0.0 // indirect
 )
+
+replace github.com/gosimple/slug => github.com/aquilax/slug v1.12.1-0.20211224131822-379e310f018e

@@ -7,7 +7,7 @@ import (
 )
 
 type Database interface {
-	Init(database, dsn string) error
+	Open(database, dsn string) error
 	GetChildNodes(domainID, parentNodeID string, count, offset int, orderBy string) (*node.NodeList, error)
 	GetAllNodes(domainID string, count, offset int, orderBy string) (*node.NodeList, error)
 	GetTotalChildNodes(domainID, parentNodeID string) (int, error)

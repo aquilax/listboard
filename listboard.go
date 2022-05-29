@@ -2,13 +2,17 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
+	"html/template"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/aquilax/listboard/database"
+	"github.com/aquilax/listboard/database/memory"
+	"github.com/aquilax/listboard/database/postgres"
 	"github.com/aquilax/listboard/database/sqlite"
 	"github.com/aquilax/listboard/node"
 	"github.com/gorilla/feeds"
@@ -19,21 +23,31 @@ import (
 const (
 	itemsPerPage  = 100
 	statusEnabled = 1
-	levelRoot     = iota
-	levelList
-	levelVote
+
+	levelRoot = 2
+	levelList = 3
+	levelVote = 4
 )
 
+type templateIndex = string
+
+var templateMap = map[templateIndex][]string{
+	"index": {"layout.html", "index.html"},
+	"add":   {"layout.html", "add.html", "form.html"},
+	"edit":  {"layout.html", "edit.html", "form.html"},
+	"list":  {"layout.html", "list.html", "form.html"},
+	"vote":  {"layout.html", "vote.html", "form.html"},
+}
+
 type ListBoard struct {
-	config *Config
-	m      *Model
-	tp     *TransPool
-	sg     *SpamGuard
+	config        *Config
+	m             *Model
+	tp            *TransPool
+	sg            *SpamGuard
+	templateCache map[string]*template.Template
 }
 
 type ValidationErrors []string
-
-type appHandler func(http.ResponseWriter, *http.Request) error
 
 func NewListBoard() *ListBoard {
 	return &ListBoard{}
@@ -42,88 +56,100 @@ func NewListBoard() *ListBoard {
 func (l *ListBoard) Run(args []string) {
 	var err error
 
-	if os.Getenv("GO_ENV") != "" {
+	l.config = NewConfig()
+
+	// setup logger
+	if l.config.Environment() != "" {
 		log.SetFlags(0)
 	} else {
 		log.SetFlags(log.Ldate | log.Ltime | log.LUTC)
 	}
 
-	l.config = NewConfig()
+	// load config
 	if err = l.config.Load(args); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	l.sg = NewSpamGuard(l.config.PostBlockExpire)
 
-	db := sqlite.New()
-	if err := db.Init(l.config.Database, l.config.Dsn); err != nil {
+	// Set up database
+	db, err := getDatabaseAdapter(l.config.Database)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("using database: %s\n", l.config.Database)
+	if err := db.Open(l.config.Database, l.config.Dsn); err != nil {
 		log.Fatal(err)
 	}
 
 	l.m = NewModel(db)
 
 	l.tp = NewTransPool(l.config.Translations)
+	l.templateCache = getTemplateCache(l.tp, l.config.Servers)
+
+	// pre-load translations
+	for i := range l.config.Servers {
+		l.tp.Get(l.config.Servers[i].Language)
+	}
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", appHandler(l.indexHandler).ServeHTTP).Methods("GET")
-	r.HandleFunc("/feed.xml", appHandler(l.feedHandler).ServeHTTP).Methods("GET")
-	r.HandleFunc("/all.xml", appHandler(l.feedAllHandler).ServeHTTP).Methods("GET")
-	r.HandleFunc("/sitemap.xml", appHandler(l.sitemapHandler).ServeHTTP).Methods("GET")
+	r.HandleFunc("/", l.withSession(l.indexHandler)).Methods("GET")
+	r.HandleFunc("/feed.xml", l.withSession(l.feedHandler)).Methods("GET")
+	r.HandleFunc("/all.xml", l.withSession(l.feedAllHandler)).Methods("GET")
+	r.HandleFunc("/sitemap.xml", l.withSession(l.sitemapHandler)).Methods("GET")
 
-	r.HandleFunc("/add.html", appHandler(l.addFormHandler).ServeHTTP).Methods("GET", "POST")
-	r.HandleFunc("/edit.html", appHandler(l.editFormHandler).ServeHTTP).Methods("GET", "POST")
-	r.HandleFunc("/list/{listID}/{slug}", appHandler(l.listHandler).ServeHTTP).Methods("GET", "POST")
-	r.HandleFunc("/vote/{itemID}/{slug}", appHandler(l.voteHandler).ServeHTTP).Methods("GET", "POST")
+	r.HandleFunc("/add.html", l.withSession(l.addFormHandler)).Methods("GET", "POST")
+	r.HandleFunc("/edit.html", l.withSession(l.editFormHandler)).Methods("GET", "POST")
+	r.HandleFunc("/list/{listID}/{slug}", l.withSession(l.listHandler)).Methods("GET", "POST")
+	r.HandleFunc("/vote/{itemID}/{slug}", l.withSession(l.voteHandler)).Methods("GET", "POST")
 
 	// Static assets
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public_html")))
 
 	http.Handle("/", r)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = l.config.Server
-	}
+	port := l.config.Port()
 
-	log.Printf("Starting server at %s", port)
+	log.Printf("starting server at %s", port)
 	if err := http.ListenAndServe(port, nil); err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		log.Fatal("listenAndServe error: ", err)
 	}
 }
 
-func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := fn(w, r); err != nil {
-		if err == sql.ErrNoRows {
-			http.Error(w, "Not found", http.StatusNotFound)
+func (l ListBoard) withSession(f func(w http.ResponseWriter, r *http.Request, s *Session) error) func(w http.ResponseWriter, r *http.Request) {
+	getToken := func(r *http.Request) string {
+		return r.Header.Get(l.config.Token)
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		sc := l.config.getSiteConfig(getToken(r))
+		tr := l.tp.Get(sc.Language)
+		s := NewSession(sc, tr)
+		if err := f(w, r, s); err != nil {
+			if err == sql.ErrNoRows {
+				http.Error(w, "Not found", http.StatusNotFound)
+				log.Printf("404 %d %s %s\n", time.Since(start).Nanoseconds(), r.Method, r.URL)
+				return
+			}
+			httpError, ok := err.(HTTPError)
+			if ok {
+				http.Error(w, httpError.Message, httpError.Code)
+				log.Printf("%d %d %s %s\n", httpError.Code, time.Since(start).Nanoseconds(), r.Method, r.URL)
+				return
+			}
+			// Default to 500 Internal Server Error
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("500 %d %s %s\n", time.Since(start).Nanoseconds(), r.Method, r.URL)
 			return
 		}
-		httpError, ok := err.(HTTPError)
-		if ok {
-			http.Error(w, httpError.Message, httpError.Code)
-			return
-		}
-		// Default to 500 Internal Server Error
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("200 %d %s %s\n", time.Since(start).Nanoseconds(), r.Method, r.URL)
 	}
 }
 
-func getPageNumber(pageStr string) int {
-	page := 1
-	var err error
-	if len(pageStr) != 0 {
-		page, err = strconv.Atoi(pageStr)
-		if err != nil {
-			log.Printf("%s is not a valid page number", pageStr)
-			page = 1
-		}
-	}
-	return page - 1
-}
-
-func (l *ListBoard) indexHandler(w http.ResponseWriter, r *http.Request) error {
+func (l ListBoard) indexHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
 	page := getPageNumber(r.URL.Query().Get("page"))
-	sc := l.config.getSiteConfig(l.getToken(r))
-	s := NewSession(sc, l.tp.Get(sc.Language))
+	sc := s.SiteConfig()
+
 	s.AddPath("", s.Lang("Home"))
 	s.Set("Lists", l.m.mustGetChildNodes(sc.DomainID, node.RootNodeID, itemsPerPage, (page*itemsPerPage), "updated DESC"))
 	s.Set("Pagination", Pagination(PaginationConfig{
@@ -133,15 +159,20 @@ func (l *ListBoard) indexHandler(w http.ResponseWriter, r *http.Request) error {
 		url:   "?",
 		param: "page",
 	}))
+	if t, found := l.templateCache[sc.getTemplateCacheKey("index")]; found {
+		return s.renderTemplate(w, r, t)
+	}
+
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("index.html"))
 }
 
-func (l *ListBoard) addFormHandler(w http.ResponseWriter, r *http.Request) error {
-	sc := l.config.getSiteConfig(l.getToken(r))
+func (l ListBoard) addFormHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
+	sc := s.SiteConfig()
 
 	var errors ValidationErrors
 	var n node.Node
 	tr := l.tp.Get(sc.Language)
+
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
 			n, errors = l.validateForm(r, sc.DomainID, node.RootNodeID, levelRoot, tr)
@@ -151,22 +182,26 @@ func (l *ListBoard) addFormHandler(w http.ResponseWriter, r *http.Request) error
 				if err != nil {
 					return &HTTPError{Err: err, Code: http.StatusInternalServerError}
 				}
-				url := "/list/" + nodeID + "/" + hfSlug(n.Title)
+				url := "/list/" + nodeID + "/" + s.Slug(n.Title)
 				http.Redirect(w, r, url, http.StatusFound)
+				return nil
 			}
 		}
 	}
-	s := NewSession(sc, tr)
+
 	s.Set("Errors", errors)
 	s.Set("Form", n)
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("", s.Lang("New list"))
 	s.Set("Subtitle", s.Lang("New list"))
+	if t, found := l.templateCache[sc.getTemplateCacheKey("add")]; found {
+		return s.renderTemplate(w, r, t)
+	}
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("add.html"), sc.templatePath("form.html"))
 }
 
-func (l *ListBoard) editFormHandler(w http.ResponseWriter, r *http.Request) error {
-	sc := l.config.getSiteConfig(l.getToken(r))
+func (l ListBoard) editFormHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
+	sc := s.SiteConfig()
 
 	var errors ValidationErrors
 	var n node.Node
@@ -176,12 +211,13 @@ func (l *ListBoard) editFormHandler(w http.ResponseWriter, r *http.Request) erro
 	nodeID = r.URL.Query().Get("id")
 
 	tr := l.tp.Get(sc.Language)
+
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
-			level := 0
+			level := levelRoot
 			parentID := node.RootNodeID
 			if level, err = strconv.Atoi(r.FormValue("level")); err != nil {
-				level = 0
+				level = levelRoot
 			}
 			parentID = r.FormValue("parent_id")
 			n, errors = l.validateForm(r, sc.DomainID, parentID, level, tr)
@@ -191,8 +227,9 @@ func (l *ListBoard) editFormHandler(w http.ResponseWriter, r *http.Request) erro
 				if err := l.m.editNode(&n); err != nil {
 					return &HTTPError{Err: err, Code: http.StatusInternalServerError}
 				}
-				url := getUrl("http://"+r.Host, n)
+				url := s.GetNodeURL(n).String()
 				http.Redirect(w, r, url, http.StatusFound)
+				return nil
 			}
 		}
 	}
@@ -202,20 +239,23 @@ func (l *ListBoard) editFormHandler(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	s := NewSession(sc, tr)
 	s.Set("Errors", errors)
 	s.Set("Form", item)
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("", s.Lang("Edit"))
 	s.Set("Subtitle", s.Lang("Edit"))
+	if t, found := l.templateCache[sc.getTemplateCacheKey("edit")]; found {
+		return s.renderTemplate(w, r, t)
+	}
+
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("edit.html"), sc.templatePath("form.html"))
 }
 
-func (l *ListBoard) listHandler(w http.ResponseWriter, r *http.Request) error {
+func (l ListBoard) listHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
 	vars := mux.Vars(r)
 	listID := node.NodeID(vars["listID"])
 
-	sc := l.config.getSiteConfig(l.getToken(r))
+	sc := s.SiteConfig()
 	tr := l.tp.Get(sc.Language)
 
 	var errors ValidationErrors
@@ -234,18 +274,18 @@ func (l *ListBoard) listHandler(w http.ResponseWriter, r *http.Request) error {
 						Code:    http.StatusInternalServerError,
 					}
 				}
-				url := "/list/" + listID + "/" + hfSlug(n.Title) + "#I" + nodeID
+				url := "/list/" + listID + "/" + s.Slug(n.Title) + "#I" + nodeID
 				http.Redirect(w, r, url, http.StatusFound)
+				return nil
 			}
 		}
 	}
-	s := NewSession(sc, tr)
 
 	s.Set("Errors", errors)
 	s.Set("Form", n)
 	list, err := l.m.getNode(sc.DomainID, listID)
 	if err != nil {
-		return err
+		return HTTPError{Err: err, Code: http.StatusNotFound}
 	}
 	page := getPageNumber(r.URL.Query().Get("page"))
 	s.Set("List", list)
@@ -262,14 +302,17 @@ func (l *ListBoard) listHandler(w http.ResponseWriter, r *http.Request) error {
 	}))
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("", list.Title)
+	if t, found := l.templateCache[sc.getTemplateCacheKey("list")]; found {
+		return s.renderTemplate(w, r, t)
+	}
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("list.html"), sc.templatePath("form.html"))
 }
 
-func (l *ListBoard) voteHandler(w http.ResponseWriter, r *http.Request) error {
+func (l ListBoard) voteHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
 	vars := mux.Vars(r)
 	itemID := node.NodeID(vars["itemID"])
 
-	sc := l.config.getSiteConfig(l.getToken(r))
+	sc := s.SiteConfig()
 	tr := l.tp.Get(sc.Language)
 	var errors ValidationErrors
 	var n node.Node
@@ -277,11 +320,12 @@ func (l *ListBoard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
+
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
-			n, errors = l.validateForm(r, sc.DomainID, itemID, levelVote, tr)
+			n, errors = l.validateForm(r, sc.DomainID, item.ID, levelVote, tr)
 			if len(errors) == 0 {
-				nodeID, err := l.m.addNode(&n)
+				newNodeID, err := l.m.addNode(&n)
 				if err != nil {
 					return &HTTPError{
 						Err:     err,
@@ -289,18 +333,18 @@ func (l *ListBoard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 						Code:    http.StatusInternalServerError,
 					}
 				}
-				if err := l.m.Vote(sc.DomainID, n.Vote, nodeID, itemID, item.ParentID); err != nil {
+				if err := l.m.Vote(sc.DomainID, n.Vote, newNodeID, item.ID, item.ParentID); err != nil {
 					return &HTTPError{
 						Err:     err,
 						Message: err.Error(),
 						Code:    http.StatusInternalServerError,
 					}
 				}
-				http.Redirect(w, r, r.URL.String()+"#I"+nodeID, http.StatusFound)
+				http.Redirect(w, r, r.URL.String()+"#I"+newNodeID, http.StatusFound)
+				return nil
 			}
 		}
 	}
-	s := NewSession(sc, tr)
 	s.Set("Subtitle", item.Title)
 	s.Set("Description", item.Title)
 	s.Set("ShowVote", true)
@@ -314,56 +358,62 @@ func (l *ListBoard) voteHandler(w http.ResponseWriter, r *http.Request) error {
 	if len(n.Title) == 0 {
 		n.Title = s.Lang("Re") + ": " + item.Title
 	}
+	n.Level = item.Level + 1
+
 	s.Set("Form", n)
 	s.Set("Items", l.m.mustGetChildNodes(sc.DomainID, itemID, itemsPerPage, 0, "created DESC"))
 	s.Set("FormTitle", s.Lang("New vote"))
 	s.AddPath("/", s.Lang("Home"))
-	s.AddPath("/list/"+list.ID+"/"+hfSlug(list.Title), list.Title)
+	s.AddPath("/list/"+list.ID+"/"+s.Slug(list.Title), list.Title)
 	s.AddPath("", item.Title)
+	if t, found := l.templateCache[sc.getTemplateCacheKey("vote")]; found {
+		return s.renderTemplate(w, r, t)
+	}
+
 	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("vote.html"), sc.templatePath("form.html"))
 }
 
-func (l *ListBoard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, nodes *node.NodeList) error {
+func (l ListBoard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, s *Session, nodes *node.NodeList) error {
 	feed := &feeds.Feed{
 		Title:       sc.Title,
-		Link:        &feeds.Link{Href: baseURL},
+		Link:        &feeds.Link{Href: s.GetAbsoluteURL("/").String()},
 		Description: sc.Description,
 		Author:      &feeds.Author{Name: sc.AuthorName, Email: sc.AuthorEmail},
 		Created:     time.Now(),
 	}
-	for _, node := range *nodes {
+	for _, n := range *nodes {
 		feed.Items = append(feed.Items, &feeds.Item{
-			Title:       node.Title,
-			Link:        &feeds.Link{Href: getUrl(baseURL, node)},
-			Description: string(node.Rendered),
-			Created:     node.Created,
+			Title:       n.Title,
+			Link:        &feeds.Link{Href: s.GetNodeURL(n).String()},
+			Description: string(n.Rendered),
+			Created:     n.Created,
 		})
 	}
 	w.Header().Set("Content-Type", "application/rss+xml")
 	return feed.WriteRss(w)
 }
 
-func (l *ListBoard) feedHandler(w http.ResponseWriter, r *http.Request) error {
-	sc := l.config.getSiteConfig(l.getToken(r))
+func (l ListBoard) feedHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
+	sc := s.SiteConfig()
 	nodes := l.m.mustGetChildNodes(sc.DomainID, node.RootNodeID, 20, 0, "created DESC")
 	baseUrl := "http://" + r.Host
-	return l.feed(w, sc, baseUrl, nodes)
+	return l.feed(w, sc, baseUrl, s, nodes)
 }
 
-func (l *ListBoard) feedAllHandler(w http.ResponseWriter, r *http.Request) error {
-	sc := l.config.getSiteConfig(l.getToken(r))
+func (l ListBoard) feedAllHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
+	sc := s.SiteConfig()
 	nodes := l.m.mustGetAllNodes(sc.DomainID, 20, 0, "created DESC")
 	baseUrl := "http://" + r.Host
-	return l.feed(w, sc, baseUrl, nodes)
+	return l.feed(w, sc, baseUrl, s, nodes)
 }
 
-func (l *ListBoard) sitemapHandler(w http.ResponseWriter, r *http.Request) error {
-	sc := l.config.getSiteConfig(l.getToken(r))
+func (l ListBoard) sitemapHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
+	sc := s.SiteConfig()
 	nodes := l.m.mustGetChildNodes(sc.DomainID, node.RootNodeID, 1000, 0, "created")
 	var urlSet sitemap.URLSet
 	for _, n := range *nodes {
 		urlSet.URLs = append(urlSet.URLs, sitemap.URL{
-			Loc:        "http://" + r.Host + "/list/" + n.ID + "/" + hfSlug(n.Title),
+			Loc:        "http://" + r.Host + "/list/" + n.ID + "/" + s.Slug(n.Title),
 			LastMod:    &n.Created,
 			ChangeFreq: sitemap.Daily,
 			Priority:   0.7,
@@ -378,7 +428,7 @@ func (l *ListBoard) sitemapHandler(w http.ResponseWriter, r *http.Request) error
 	return err
 }
 
-func (l *ListBoard) validateForm(r *http.Request, domainID node.DomainID, parentID node.NodeID, level int, ln *Language) (node.Node, ValidationErrors) {
+func (l ListBoard) validateForm(r *http.Request, domainID node.DomainID, parentID node.NodeID, level int, ln *Language) (node.Node, ValidationErrors) {
 	n := node.Node{
 		ParentID: parentID,
 		DomainID: domainID,
@@ -392,6 +442,8 @@ func (l *ListBoard) validateForm(r *http.Request, domainID node.DomainID, parent
 	errors := ValidationErrors{}
 	if !l.sg.CanPost(r.RemoteAddr) {
 		errors = append(errors, ln.Lang("Please wait before posting again"))
+		// Exit fast on flood
+		return n, errors
 	}
 	if len(n.Title) < 3 {
 		errors = append(errors, ln.Lang("Title must be at least 3 characters long"))
@@ -408,17 +460,36 @@ func (l *ListBoard) validateForm(r *http.Request, domainID node.DomainID, parent
 	return n, errors
 }
 
-func (l *ListBoard) getToken(r *http.Request) string {
-	return r.Header.Get(l.config.Token)
+func getTemplateCache(tp *TransPool, sites map[string]*SiteConfig) map[string]*template.Template {
+	templateCache := make(map[string]*template.Template)
+
+	for _, sc := range sites {
+		s := NewSession(sc, tp.Get(sc.Language))
+		for name, fileNames := range templateMap {
+			key := sc.getTemplateCacheKey(name)
+			if _, found := templateCache[key]; !found {
+				layout := template.New("layout.html")
+				layout.Funcs(s.getHelpers())
+				files := make([]string, len(fileNames))
+				for i, fileName := range fileNames {
+					files[i] = sc.templatePath(fileName)
+				}
+				templateCache[key] = template.Must(layout.ParseFiles(files...))
+			}
+		}
+	}
+	return templateCache
 }
 
-func getUrl(baseURL string, n node.Node) string {
-	switch n.Level {
-	case levelRoot:
-		return baseURL + "/list/" + n.ID + "/" + hfSlug(n.Title)
-	case levelList:
-		return baseURL + "/list/" + n.ParentID + "/item#I" + n.ID
-	default:
-		return baseURL + "/vote/" + n.ParentID + "/item#I" + n.ID
+func getDatabaseAdapter(db string) (database.Database, error) {
+	if db == "sqlite" || db == "sqlite3" {
+		return sqlite.New(), nil
 	}
+	if db == "postgres" {
+		return postgres.New(), nil
+	}
+	if db == "memory" {
+		return memory.New(), nil
+	}
+	return nil, fmt.Errorf("database %s is not supported", db)
 }

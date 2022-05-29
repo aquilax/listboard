@@ -17,10 +17,13 @@ func New() *SQLite {
 	return &SQLite{}
 }
 
-func (m *SQLite) Init(database, DSN string) error {
+func (m *SQLite) Open(database, DSN string) error {
 	var err error
 	m.db, err = sqlx.Open(database, DSN)
-	return err
+	if err != nil {
+		return err
+	}
+	return m.db.Ping()
 }
 
 func (m SQLite) GetChildNodes(domainID node.DomainID, parentNodeID node.NodeID, count, offset int, orderBy string) (*node.NodeList, error) {
