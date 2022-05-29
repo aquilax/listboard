@@ -60,7 +60,7 @@ func (m *Model) Vote(domainID node.DomainID, vote int, nodeID, parentID, grandPa
 	return nil
 }
 
-func (m *Model) editNode(node *node.Node) error {
-	node.Updated = time.Now()
-	return m.db.EditNode(node)
+func (m *Model) editNode(n *node.Node) error {
+	n.Updated = time.Now()
+	return m.db.EditNode(n)
 }

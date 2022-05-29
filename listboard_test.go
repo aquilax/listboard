@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -15,10 +16,13 @@ func getTestConfig() *Config {
 	c.Database = "memory"
 	c.Dsn = ""
 	c.Translations = "./translations/"
+	c.PostBlockExpire = "0s"
+	baseUrl, _ := url.Parse("http://www.example.com")
 	c.Servers = map[string]*SiteConfig{
 		"": {
 			DomainID: "1",
 			Language: "en_US",
+			BaseUrl:  baseUrl,
 		},
 	}
 	return c
@@ -37,6 +41,7 @@ func TestListBoard(t *testing.T) {
 	lb := NewListBoard()
 	lb.config = getTestConfig()
 	lb.tp = NewTransPool(lb.config.Translations)
+	lb.sg = NewSpamGuard(lb.config.PostBlockExpire)
 
 	db, _ := getDatabaseAdapter(lb.config.Database)
 	db.Open(lb.config.Database, lb.config.Dsn)
@@ -46,6 +51,7 @@ func TestListBoard(t *testing.T) {
 		ParentID: node.RootNodeID,
 		Title:    "Test Node",
 		DomainID: "1",
+		TripCode: getTripCode("test"),
 	})
 
 	tests := []struct {
@@ -99,6 +105,30 @@ func TestListBoard(t *testing.T) {
 
 				if !strings.Contains(wr.Body.String(), "Test Node") {
 					t.Errorf(`response body "%s" does not contain "Test Node"`, wr.Body.String())
+				}
+			},
+		},
+		{
+			"updating list works",
+			func() *http.Request {
+				form := url.Values{
+					"title":    {"Updated Test Node"},
+					"password": {"test"},
+					"body":     {"Updated note body"},
+				}
+				r := httptest.NewRequest(http.MethodPost, "/edit.html?id="+listNodeID, strings.NewReader(form.Encode()))
+				r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+				return r
+			}(),
+			lb.editFormHandler,
+			func(wr *httptest.ResponseRecorder) {
+				if wr.Code != http.StatusFound {
+					t.Errorf("got HTTP status code %d, expected %d", wr.Code, http.StatusFound)
+				}
+				redirectURI := wr.Header().Get("Location")
+				wantRedirectURI := "http://www.example.com/list/" + listNodeID + "/updated-test-node.html"
+				if redirectURI != wantRedirectURI {
+					t.Errorf("got Redirect to %s, expected %s", redirectURI, wantRedirectURI)
 				}
 			},
 		},
