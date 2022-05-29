@@ -16,7 +16,7 @@ import (
 	"github.com/aquilax/listboard/database/sqlite"
 	"github.com/aquilax/listboard/node"
 	"github.com/gorilla/feeds"
-	"github.com/gorilla/mux"
+	"github.com/julienschmidt/httprouter"
 	"github.com/sourcegraph/sitemap"
 )
 
@@ -92,19 +92,27 @@ func (l *ListBoard) Run(args []string) {
 		l.tp.Get(l.config.Servers[i].Language)
 	}
 
-	r := mux.NewRouter()
-	r.HandleFunc("/", l.withSession(l.indexHandler)).Methods("GET")
-	r.HandleFunc("/feed.xml", l.withSession(l.feedHandler)).Methods("GET")
-	r.HandleFunc("/all.xml", l.withSession(l.feedAllHandler)).Methods("GET")
-	r.HandleFunc("/sitemap.xml", l.withSession(l.sitemapHandler)).Methods("GET")
+	r := httprouter.New()
 
-	r.HandleFunc("/add.html", l.withSession(l.addFormHandler)).Methods("GET", "POST")
-	r.HandleFunc("/edit.html", l.withSession(l.editFormHandler)).Methods("GET", "POST")
-	r.HandleFunc("/list/{listID}/{slug}", l.withSession(l.listHandler)).Methods("GET", "POST")
-	r.HandleFunc("/vote/{itemID}/{slug}", l.withSession(l.voteHandler)).Methods("GET", "POST")
+	r.HandlerFunc(http.MethodGet, "/", l.withSession(l.indexHandler))
+	r.HandlerFunc(http.MethodGet, "/feed.xml", l.withSession(l.feedHandler))
+	r.HandlerFunc(http.MethodGet, "/all.xml", l.withSession(l.feedAllHandler))
+	r.HandlerFunc(http.MethodGet, "/sitemap.xml", l.withSession(l.sitemapHandler))
+
+	r.HandlerFunc(http.MethodGet, "/add.html", l.withSession(l.addFormHandler))
+	r.HandlerFunc(http.MethodPost, "/add.html", l.withSession(l.addFormHandler))
+
+	r.HandlerFunc(http.MethodGet, "/edit.html", l.withSession(l.editFormHandler))
+	r.HandlerFunc(http.MethodPost, "/edit.html", l.withSession(l.editFormHandler))
+
+	r.HandlerFunc(http.MethodGet, "/list/:listID/:slug", l.withSession(l.listHandler))
+	r.HandlerFunc(http.MethodPost, "/list/:listID/:slug", l.withSession(l.listHandler))
+
+	r.HandlerFunc(http.MethodGet, "/vote/:itemID/:slug", l.withSession(l.voteHandler))
+	r.HandlerFunc(http.MethodPost, "/vote/:itemID/:slug", l.withSession(l.voteHandler))
 
 	// Static assets
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public_html")))
+	r.NotFound = http.FileServer(http.Dir("./public_html/"))
 
 	http.Handle("/", r)
 
@@ -252,8 +260,8 @@ func (l ListBoard) editFormHandler(w http.ResponseWriter, r *http.Request, s *Se
 }
 
 func (l ListBoard) listHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
-	vars := mux.Vars(r)
-	listID := node.NodeID(vars["listID"])
+	params := httprouter.ParamsFromContext(r.Context())
+	listID := node.NodeID(params.ByName("listID"))
 
 	sc := s.SiteConfig()
 	tr := l.tp.Get(sc.Language)
@@ -309,8 +317,9 @@ func (l ListBoard) listHandler(w http.ResponseWriter, r *http.Request, s *Sessio
 }
 
 func (l ListBoard) voteHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
-	vars := mux.Vars(r)
-	itemID := node.NodeID(vars["itemID"])
+	r.Context()
+	params := httprouter.ParamsFromContext(r.Context())
+	itemID := node.NodeID(params.ByName("itemID"))
 
 	sc := s.SiteConfig()
 	tr := l.tp.Get(sc.Language)

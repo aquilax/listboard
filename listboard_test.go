@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -8,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/aquilax/listboard/node"
-	"github.com/gorilla/mux"
+	"github.com/julienschmidt/httprouter"
 )
 
 func getTestConfig() *Config {
@@ -92,10 +93,10 @@ func TestListBoard(t *testing.T) {
 			"list page loads",
 			func() *http.Request {
 				r := httptest.NewRequest(http.MethodGet, "/list/"+listNodeID+"/test.html", nil)
-				vars := map[string]string{
-					"listID": listNodeID,
-				}
-				return mux.SetURLVars(r, vars)
+				ctx := context.WithValue(r.Context(), httprouter.ParamsKey, httprouter.Params{
+					{Key: "listID", Value: listNodeID},
+				})
+				return r.WithContext(ctx)
 			}(),
 			lb.listHandler,
 			func(wr *httptest.ResponseRecorder) {
