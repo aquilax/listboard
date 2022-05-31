@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"time"
@@ -114,14 +117,42 @@ func (l *ListBoard) Run(args []string) {
 	// Static assets
 	r.NotFound = http.FileServer(http.Dir("./public_html/"))
 
-	http.Handle("/", r)
-
+	shutdownWait := time.Second * 15
 	port := l.config.Port()
 
-	log.Printf("starting server at %s", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		log.Fatal("listenAndServe error: ", err)
+	srv := &http.Server{
+		Addr:         ":" + port,
+		WriteTimeout: time.Second * 5,
+		ReadTimeout:  time.Second * 10,
+		IdleTimeout:  time.Second * 50,
+		Handler:      r,
 	}
+
+	go func() {
+		log.Printf("starting server at %s", port)
+		if err := srv.ListenAndServe(); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
+	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
+	signal.Notify(c, os.Interrupt)
+
+	// Block until we receive our signal.
+	<-c
+
+	// Create a deadline to wait for.
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownWait)
+	defer cancel()
+
+	// Doesn't block if no connections, but will otherwise wait
+	// until the timeout deadline.
+	srv.Shutdown(ctx)
+
+	log.Println("shutting down")
+	os.Exit(0)
 }
 
 func (l ListBoard) withSession(f func(w http.ResponseWriter, r *http.Request, s *Session) error) func(w http.ResponseWriter, r *http.Request) {
@@ -136,21 +167,21 @@ func (l ListBoard) withSession(f func(w http.ResponseWriter, r *http.Request, s 
 		if err := f(w, r, s); err != nil {
 			if err == sql.ErrNoRows {
 				http.Error(w, "Not found", http.StatusNotFound)
-				log.Printf("404 %d %s %s\n", time.Since(start).Nanoseconds(), r.Method, r.URL)
+				log.Printf("404 %d %s %s%s\n", time.Since(start).Nanoseconds(), r.Method, sc.Domain, r.URL)
 				return
 			}
 			httpError, ok := err.(HTTPError)
 			if ok {
 				http.Error(w, httpError.Message, httpError.Code)
-				log.Printf("%d %d %s %s\n", httpError.Code, time.Since(start).Nanoseconds(), r.Method, r.URL)
+				log.Printf("%d %d %s %s%s\n", httpError.Code, time.Since(start).Nanoseconds(), r.Method, sc.Domain, r.URL)
 				return
 			}
 			// Default to 500 Internal Server Error
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Printf("500 %d %s %s\n", time.Since(start).Nanoseconds(), r.Method, r.URL)
+			log.Printf("500 %d %s %s%s\n", time.Since(start).Nanoseconds(), r.Method, sc.Domain, r.URL)
 			return
 		}
-		log.Printf("200 %d %s %s\n", time.Since(start).Nanoseconds(), r.Method, r.URL)
+		log.Printf("200 %d %s %s%s\n", time.Since(start).Nanoseconds(), r.Method, sc.Domain, r.URL)
 	}
 }
 
