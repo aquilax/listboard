@@ -37,6 +37,7 @@ COPY config /app/config
 COPY public_html /app/public_html
 COPY templates /app/templates
 COPY translations /app/translations
+COPY extra/* /app/
 
 # Run the hello binary.
 ENTRYPOINT ["/app/listboard"]

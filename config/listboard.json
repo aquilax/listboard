@@ -1,5 +1,5 @@
 {
-  "server": ":8081",
+  "server": "8081",
   "database": "memory",
   "dsn": "",
   "translations": "./translations/",

@@ -1,41 +1,41 @@
 {{define "content"}}
-    <div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
+  <div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
+    <div class="article">
+      <img class="avatar" src="{{ gravatar .List.TripCode }}" />
+      <h3 id="{{.List.ID}}"><span itemprop="name">{{.List.Title}}</span> <a class="ref" href="/list/{{.List.ID}}/{{slug .List.Title}}">#{{.List.ID}}</a></h4>
+      <div class="txt" itemprop="articleBody">
+        {{ rawHTML .List.Rendered }}
+      </div>
+    </div>
+    <div class="meta ar">
+      {{if .List.TripCode}} [<b>{{.List.TripCode}}</b>] [<a href="/edit.html?id={{.List.ID}}" rel="nofollow">{{lang "edit"}}</a>]{{end}}
+      <em>{{ time .List.Created }}</em>
+    </div>
+  </div>
+  {{template "pagination" .Pagination }}
+  {{if .Items}}
+  <ul>
+  {{range $i, $item := .Items}}
+    <li>
+      <div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
         <div class="article">
-            <img class="avatar" src="{{ gravatar .List.TripCode }}" />
-            <h3 id="{{.List.ID}}"><span itemprop="name">{{.List.Title}}</span> <a class="ref" href="/list/{{.List.ID}}/{{slug .List.Title}}">#{{.List.ID}}</a></h4>
-            <div class="txt" itemprop="articleBody">
-                {{ rawHTML .List.Rendered }}
-            </div>
+          <img class="avatar" src="{{ gravatar $item.TripCode }}" />
+          <h4 id="I{{$item.ID}}"><span itemprop="name">{{$item.Title}}</span> <a class="ref" href="/list/{{$.List.ID}}/{{slug $.List.Title}}#I{{$item.ID}}">#{{$item.ID}}</a></h4>
+          <div class="txt" itemprop="articleBody">
+            {{ rawHTML $item.Rendered }}
+          </div>
         </div>
         <div class="meta ar">
-            {{if .List.TripCode}} [<b>{{.List.TripCode}}</b>] [<a href="/edit.html?id={{.List.ID}}" rel="nofollow">{{lang "edit"}}</a>]{{end}}
-            <em>{{ time .List.Created }}</em>
+          {{if $item.TripCode}} [<b>{{$item.TripCode}}</b>] [<a href="/edit.html?id={{$item.ID}}" rel="nofollow">{{lang "edit"}}</a>]{{end}}
+          [ <a href="/vote/{{$item.ID}}/{{slug $item.Title}}#post">{{lang "vote"}}</a> ]
+          {{lang "rating"}}: <b>{{$item.Vote}}</b> |
+          <em>{{ time $item.Created }}</em>
         </div>
-    </div>
-    {{template "pagination" .Pagination }}
-    {{if .Items}}
-    <ul>
-    {{range $i, $item := .Items}}
-        <li>
-            <div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
-                <div class="article">
-                    <img class="avatar" src="{{ gravatar $item.TripCode }}" />
-                    <h4 id="I{{$item.ID}}"><span itemprop="name">{{$item.Title}}</span> <a class="ref" href="/list/{{$.List.ID}}/{{slug $.List.Title}}#I{{$item.ID}}">#{{$item.ID}}</a></h4>
-                    <div class="txt" itemprop="articleBody">
-                        {{ rawHTML $item.Rendered}}
-                    </div>
-                </div>
-                <div class="meta ar">
-                    {{if $item.TripCode}} [<b>{{$item.TripCode}}</b>] [<a href="/edit.html?id={{$item.ID}}" rel="nofollow">{{lang "edit"}}</a>]{{end}}
-                    [ <a href="/vote/{{$item.ID}}/{{slug $item.Title}}#post">{{lang "vote"}}</a> ]
-                    {{lang "rating"}}: <b>{{$item.Vote}}</b> |
-                    <em>{{ time $item.Created }}</em>
-                </div>
-            </div>
-        </li>
-    {{end}}
-    </ul>
-    {{end}}
-    {{template "pagination" .Pagination }}
-    {{template "form" .}}
+      </div>
+    </li>
+  {{end}}
+  </ul>
+  {{end}}
+  {{template "pagination" .Pagination }}
+  {{template "form" .}}
 {{end}}

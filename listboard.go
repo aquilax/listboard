@@ -24,9 +24,9 @@ const (
 	itemsPerPage  = 100
 	statusEnabled = 1
 
-	levelRoot = 2
-	levelList = 3
-	levelVote = 4
+	levelRoot = 1
+	levelList = 2
+	levelVote = 3
 )
 
 type templateIndex = string
@@ -78,7 +78,7 @@ func (l *ListBoard) Run(args []string) {
 		log.Fatal(err)
 	}
 	log.Printf("using database: %s\n", l.config.Database)
-	if err := db.Open(l.config.Database, l.config.Dsn); err != nil {
+	if err := db.Open(l.config.Database, l.config.DSN()); err != nil {
 		log.Fatal(err)
 	}
 
@@ -119,7 +119,7 @@ func (l *ListBoard) Run(args []string) {
 	port := l.config.Port()
 
 	log.Printf("starting server at %s", port)
-	if err := http.ListenAndServe(port, nil); err != nil {
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal("listenAndServe error: ", err)
 	}
 }

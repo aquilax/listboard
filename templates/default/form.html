@@ -1,51 +1,51 @@
 {{define "form"}}
-    <div id="post" class="topic">
-        <h3>{{lang .FormTitle}}</h3>
-        <form method="post">
-            <input type="hidden" name="level" value="{{ .Form.Level }}" />
-            <input type="hidden" name="parent_id" value="{{ .Form.ParentID }}" />
-            <div id="namef">Leaf thiz fild aloun <input type="text" name="name" value="" id="name" /></div>
-            {{if .Errors }}
-                {{range .Errors}}
-                    <div class="error">
-                        <p>{{.}}</p>
-                    </div>
-                {{end}}
-            {{end}}
-            <table>
-                <tr>
-                    <td colspan="2">
-                        <label for="title">{{lang "Title"}}</label> <em title="{{lang "Mandatory"}}">*</em><br/>
-                        <input name="title" value="{{ .Form.Title }}" id="title" size="80" />
-                    </td>
-                </tr>
-                {{if .ShowVote}}
-                <tr>
-                    <td colspan="2">
-                        <input type="radio" name="vote" value="y" {{if eq .Form.Vote 1}}checked="checked"{{end}} class="radio" id="vyes"  />
-                        <label for="vyes">{{lang "Up"}}</label>
-                        <input type="radio" name="vote" value="n" {{if eq .Form.Vote -1}}checked="checked"{{end}} class="radio" id="vno"  />
-                        <label for="vno">{{lang "Down"}}</label>
-                        <input type="radio" name="vote" value="z" {{if eq .Form.Vote 0}}checked="checked"{{end}} class="radio" id="vskip"  />
-                        <label for="vskip">{{lang "Comment"}}</label>
-                    </td>
-                </tr>
-                {{end}}
-                <tr>
-                    <td colspan="2">
-                        <textarea id="textarea" name="body" cols="60" rows="10">{{ .Form.Body }}</textarea>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <label for="password">{{lang "Optional tripcode password"}}</label><br />
-                        <input type="password" name="password" size="60" id="password" />
-                    </td>
-                    <td valign="bottom" width="100px">
-                        <button name="post" style="vertical-align:bottom; width:100px" onclick="this.disabled=true;this.form.submit()">{{ lang "Submit" }}</button>
-                    </td>
-                </tr>
-            </table>
-        </form>
-    </div>
+  <div id="post" class="topic">
+    <h3>{{lang .FormTitle}}</h3>
+    <form method="post">
+      <input type="hidden" name="level" value="{{ .Form.Level }}" />
+      <input type="hidden" name="parent_id" value="{{ .Form.ParentID }}" />
+      <div id="namef">Leaf thiz fild aloun <input type="text" name="name" value="" id="name" /></div>
+      {{if .Errors }}
+        {{range .Errors}}
+        <div class="error">
+          <p>{{.}}</p>
+        </div>
+        {{end}}
+      {{end}}
+      <table>
+        <tr>
+          <td colspan="2">
+            <label for="title">{{lang "Title"}}</label> <em title="{{lang "Mandatory"}}">*</em><br/>
+            <input name="title" value="{{ .Form.Title }}" id="title" size="80" />
+          </td>
+        </tr>
+        {{if .ShowVote}}
+        <tr>
+          <td colspan="2">
+            <input type="radio" name="vote" value="y" {{if eq .Form.Vote 1}}checked="checked"{{end}} class="radio" id="vyes"  />
+            <label for="vyes">{{lang "Up"}}</label>
+            <input type="radio" name="vote" value="n" {{if eq .Form.Vote -1}}checked="checked"{{end}} class="radio" id="vno"  />
+            <label for="vno">{{lang "Down"}}</label>
+            <input type="radio" name="vote" value="z" {{if eq .Form.Vote 0}}checked="checked"{{end}} class="radio" id="vskip"  />
+            <label for="vskip">{{lang "Comment"}}</label>
+          </td>
+        </tr>
+        {{end}}
+        <tr>
+          <td colspan="2">
+            <textarea id="textarea" name="body" cols="60" rows="10">{{ .Form.Body }}</textarea>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <label for="password">{{lang "Optional tripcode password"}}</label><br />
+            <input type="password" name="password" size="60" id="password" />
+          </td>
+          <td valign="bottom" width="100px">
+            <button name="post" style="vertical-align:bottom; width:100px" onclick="this.disabled=true;this.form.submit()">{{ lang "Submit" }}</button>
+          </td>
+        </tr>
+      </table>
+    </form>
+  </div>
 {{end}}

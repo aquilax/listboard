@@ -11,6 +11,7 @@ import (
 )
 
 const ENV_CONFIG_FILE = "LB_CONFIG_FILE"
+const ENV_DB_DSN = "LB_DB_DSN"
 const ENV_ENVIRONMENT = "GO_ENV"
 
 const defaultConfigFile = "./config/listboard.json"
@@ -98,6 +99,7 @@ func (sc SiteConfig) templatePath(templateName string) string {
 func (sc SiteConfig) getTemplateCacheKey(name string) string {
 	var sb strings.Builder
 	sb.WriteString(sc.Templates)
+	sb.WriteString(sc.Language)
 	sb.WriteString(name)
 	return sb.String()
 }
@@ -112,4 +114,12 @@ func (sc Config) Port() string {
 		port = sc.Server
 	}
 	return port
+}
+
+func (sc Config) DSN() string {
+	dsn := os.Getenv(ENV_DB_DSN)
+	if dsn == "" {
+		dsn = sc.Dsn
+	}
+	return dsn
 }

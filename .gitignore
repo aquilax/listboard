@@ -26,3 +26,4 @@ _testmain.go
 listboard
 db/test.sqlite
 config/vps.json
+extra/*

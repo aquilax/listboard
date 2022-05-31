@@ -55,6 +55,12 @@ func TestListBoard(t *testing.T) {
 		TripCode: getTripCode("test"),
 	})
 
+	// TODO
+	// r.HandlerFunc(http.MethodPost, "/add.html", l.withSession(l.addFormHandler))
+	// r.HandlerFunc(http.MethodPost, "/list/:listID/:slug", l.withSession(l.listHandler))
+	// r.HandlerFunc(http.MethodGet, "/vote/:itemID/:slug", l.withSession(l.voteHandler))
+	// r.HandlerFunc(http.MethodPost, "/vote/:itemID/:slug", l.withSession(l.voteHandler))
+
 	tests := []struct {
 		name    string
 		req     *http.Request
@@ -62,7 +68,7 @@ func TestListBoard(t *testing.T) {
 		assert  func(wr *httptest.ResponseRecorder)
 	}{
 		{
-			"index page loads",
+			"GET /",
 			httptest.NewRequest(http.MethodGet, "/", nil),
 			lb.indexHandler,
 			func(wr *httptest.ResponseRecorder) {
@@ -76,7 +82,52 @@ func TestListBoard(t *testing.T) {
 			},
 		},
 		{
-			"add page loads",
+			"GET /feed.xml",
+			httptest.NewRequest(http.MethodGet, "/feed.xml", nil),
+			lb.feedHandler,
+			func(wr *httptest.ResponseRecorder) {
+				if wr.Code != http.StatusOK {
+					t.Errorf("got HTTP status code %d, expected %d", wr.Code, http.StatusOK)
+				}
+
+				wantContent := "<title>Test Node</title>"
+				if !strings.Contains(wr.Body.String(), wantContent) {
+					t.Errorf(`response body "%s" does not contain %s`, wr.Body.String(), wantContent)
+				}
+			},
+		},
+		{
+			"GET /all.xml",
+			httptest.NewRequest(http.MethodGet, "/all.xml", nil),
+			lb.feedAllHandler,
+			func(wr *httptest.ResponseRecorder) {
+				if wr.Code != http.StatusOK {
+					t.Errorf("got HTTP status code %d, expected %d", wr.Code, http.StatusOK)
+				}
+
+				wantContent := "<title>Test Node</title>"
+				if !strings.Contains(wr.Body.String(), wantContent) {
+					t.Errorf(`response body "%s" does not contain %s`, wr.Body.String(), wantContent)
+				}
+			},
+		},
+		{
+			"GET /sitemap.xml",
+			httptest.NewRequest(http.MethodGet, "/sitemap.xml", nil),
+			lb.sitemapHandler,
+			func(wr *httptest.ResponseRecorder) {
+				if wr.Code != http.StatusOK {
+					t.Errorf("got HTTP status code %d, expected %d", wr.Code, http.StatusOK)
+				}
+
+				wantContent := "<loc>http://example.com/list/" + listNodeID + "/test-node</loc>"
+				if !strings.Contains(wr.Body.String(), wantContent) {
+					t.Errorf(`response body "%s" does not contain %s`, wr.Body.String(), wantContent)
+				}
+			},
+		},
+		{
+			"GET /add.html",
 			httptest.NewRequest(http.MethodGet, "/add.html", nil),
 			lb.addFormHandler,
 			func(wr *httptest.ResponseRecorder) {
@@ -90,7 +141,7 @@ func TestListBoard(t *testing.T) {
 			},
 		},
 		{
-			"list page loads",
+			"GET /list/:listID/:slug ",
 			func() *http.Request {
 				r := httptest.NewRequest(http.MethodGet, "/list/"+listNodeID+"/test.html", nil)
 				ctx := context.WithValue(r.Context(), httprouter.ParamsKey, httprouter.Params{
@@ -110,7 +161,22 @@ func TestListBoard(t *testing.T) {
 			},
 		},
 		{
-			"updating list works",
+			"GET /edit.html?id=:listID",
+			httptest.NewRequest(http.MethodGet, "/edit.html?id="+listNodeID, nil),
+			lb.editFormHandler,
+			func(wr *httptest.ResponseRecorder) {
+				if wr.Code != http.StatusOK {
+					t.Errorf("got HTTP status code %d, expected %d", wr.Code, http.StatusOK)
+				}
+
+				wantContent := "Test Node"
+				if !strings.Contains(wr.Body.String(), wantContent) {
+					t.Errorf(`response body "%s" does not contain %s`, wr.Body.String(), wantContent)
+				}
+			},
+		},
+		{
+			"POST /edit.html?id=:listID",
 			func() *http.Request {
 				form := url.Values{
 					"title":    {"Updated Test Node"},
@@ -141,5 +207,4 @@ func TestListBoard(t *testing.T) {
 			tt.assert(wr)
 		})
 	}
-
 }
