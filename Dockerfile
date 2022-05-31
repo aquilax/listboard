@@ -24,6 +24,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /go/bin/listboard
 
 FROM scratch
 
+USER 1001
+
 ENV GO_ENV=production
 ENV LB_CONFIG_FILE=config/listboard.json
 
