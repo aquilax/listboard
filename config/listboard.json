@@ -2,6 +2,7 @@
   "server": "8081",
   "database": "memory",
   "dsn": "",
+  "cache_db": true,
   "translations": "./translations/",
   "token": "X-Server",
   "post_block_expire": "10s",

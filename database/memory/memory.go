@@ -54,8 +54,8 @@ func (m Memory) GetAllNodes(domainID string, count, offset int, orderBy string) 
 	// TODO order
 	result := found[offset:min(len(found), offset+count)]
 	return &result, nil
-
 }
+
 func (m Memory) GetTotalChildNodes(domainID, parentNodeID string) (int, error) {
 	found := find(m.nl, func(n node.Node) bool {
 		return n.DomainID == domainID && n.ParentID == parentNodeID

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/aquilax/listboard/database"
+	"github.com/aquilax/listboard/database/cached"
 	"github.com/aquilax/listboard/database/memory"
 	"github.com/aquilax/listboard/database/postgres"
 	"github.com/aquilax/listboard/database/sqlite"
@@ -76,11 +77,11 @@ func (l *ListBoard) Run(args []string) {
 	l.sg = NewSpamGuard(l.config.PostBlockExpire)
 
 	// Set up database
-	db, err := getDatabaseAdapter(l.config.Database)
+	db, err := getDatabaseAdapter(l.config.Database, l.config.CacheDB)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("using database: %s\n", l.config.Database)
+	log.Printf("using database: %s cached: %t\n", l.config.Database, l.config.CacheDB)
 	if err := db.Open(l.config.Database, l.config.DSN()); err != nil {
 		log.Fatal(err)
 	}
@@ -166,18 +167,18 @@ func (l ListBoard) withSession(f func(w http.ResponseWriter, r *http.Request, s 
 		s := NewSession(sc, tr)
 		if err := f(w, r, s); err != nil {
 			if err == sql.ErrNoRows {
-				http.Error(w, "Not found", http.StatusNotFound)
+				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 				log.Printf("404 %d %s %s%s\n", time.Since(start).Nanoseconds(), r.Method, sc.Domain, r.URL)
 				return
 			}
 			httpError, ok := err.(HTTPError)
 			if ok {
-				http.Error(w, httpError.Message, httpError.Code)
+				http.Error(w, http.StatusText(httpError.Code), httpError.Code)
 				log.Printf("%d %d %s %s%s\n", httpError.Code, time.Since(start).Nanoseconds(), r.Method, sc.Domain, r.URL)
 				return
 			}
 			// Default to 500 Internal Server Error
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			log.Printf("500 %d %s %s%s\n", time.Since(start).Nanoseconds(), r.Method, sc.Domain, r.URL)
 			return
 		}
@@ -324,7 +325,7 @@ func (l ListBoard) listHandler(w http.ResponseWriter, r *http.Request, s *Sessio
 	s.Set("Form", n)
 	list, err := l.m.getNode(sc.DomainID, listID)
 	if err != nil {
-		return HTTPError{Err: err, Code: http.StatusNotFound}
+		return HTTPError{Err: err, Code: http.StatusNotFound, Message: "404 Page not found"}
 	}
 	page := getPageNumber(r.URL.Query().Get("page"))
 	s.Set("List", list)
@@ -521,15 +522,23 @@ func getTemplateCache(tp *TransPool, sites map[string]*SiteConfig) map[string]*t
 	return templateCache
 }
 
-func getDatabaseAdapter(db string) (database.Database, error) {
-	if db == "sqlite" || db == "sqlite3" {
-		return sqlite.New(), nil
+func getDatabaseAdapter(db string, useCache bool) (database.Database, error) {
+	dbAdapter, err := func(db string) (database.Database, error) {
+		if db == "sqlite" || db == "sqlite3" {
+			return sqlite.New(), nil
+		}
+		if db == "postgres" {
+			return postgres.New(), nil
+		}
+		if db == "memory" {
+			return memory.New(), nil
+		}
+		return nil, fmt.Errorf("database %s is not supported", db)
+	}(db)
+
+	if useCache {
+		return cached.New(dbAdapter), err
 	}
-	if db == "postgres" {
-		return postgres.New(), nil
-	}
-	if db == "memory" {
-		return memory.New(), nil
-	}
-	return nil, fmt.Errorf("database %s is not supported", db)
+	return dbAdapter, err
+
 }
