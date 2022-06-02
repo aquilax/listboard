@@ -11,20 +11,23 @@ import (
 
 type GetTotalChildNodesCache map[string]int
 type GetNodeCache map[string]*node.Node
+type GetChildNodesCache map[string]*node.NodeList
 
 type Cached struct {
-	db          database.Database
-	totalsCache map[node.DomainID]GetTotalChildNodesCache
-	nodeCache   map[node.DomainID]GetNodeCache
-	locks       map[node.DomainID]*sync.Mutex
+	db              database.Database
+	totalsCache     map[node.DomainID]GetTotalChildNodesCache
+	nodeCache       map[node.DomainID]GetNodeCache
+	childNodesCache map[node.DomainID]GetChildNodesCache
+	locks           map[node.DomainID]*sync.Mutex
 }
 
 func New(db database.Database) *Cached {
 	return &Cached{
-		db:          db,
-		totalsCache: make(map[string]GetTotalChildNodesCache),
-		nodeCache:   make(map[string]GetNodeCache),
-		locks:       make(map[node.DomainID]*sync.Mutex),
+		db:              db,
+		totalsCache:     make(map[string]GetTotalChildNodesCache),
+		nodeCache:       make(map[string]GetNodeCache),
+		childNodesCache: make(map[node.DomainID]GetChildNodesCache),
+		locks:           make(map[node.DomainID]*sync.Mutex),
 	}
 }
 
@@ -36,6 +39,12 @@ func (m Cached) clear(domainID node.DomainID) error {
 		if _, found := m.totalsCache[domainID]; found {
 			m.totalsCache[domainID] = make(GetTotalChildNodesCache)
 		}
+		if _, found := m.nodeCache[domainID]; found {
+			m.nodeCache[domainID] = make(GetNodeCache)
+		}
+		if _, found := m.childNodesCache[domainID]; found {
+			m.childNodesCache[domainID] = make(GetChildNodesCache)
+		}
 		m.locks[domainID].Unlock()
 	}
 	return nil
@@ -46,7 +55,22 @@ func (m Cached) Open(database, dsn string) error {
 }
 
 func (m Cached) GetChildNodes(domainID, parentNodeID string, count, offset int, orderBy string) (*node.NodeList, error) {
-	return m.db.GetChildNodes(domainID, parentNodeID, count, offset, orderBy)
+	var result *node.NodeList
+	key := fmt.Sprintf("%s|%s|%d|%d%s", domainID, parentNodeID, count, offset, orderBy)
+
+	if _, found := m.childNodesCache[domainID]; found {
+		if result, found := m.childNodesCache[domainID][key]; found {
+			return result, nil
+		}
+	} else {
+		m.childNodesCache[domainID] = make(GetChildNodesCache)
+	}
+
+	result, err := m.db.GetChildNodes(domainID, parentNodeID, count, offset, orderBy)
+	if err != nil {
+		m.childNodesCache[domainID][key] = result
+	}
+	return result, err
 }
 
 func (m Cached) GetAllNodes(domainID string, count, offset int, orderBy string) (*node.NodeList, error) {

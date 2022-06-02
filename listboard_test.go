@@ -44,7 +44,7 @@ func TestListBoard(t *testing.T) {
 	lb.tp = NewTransPool(lb.config.Translations)
 	lb.sg = NewSpamGuard(lb.config.PostBlockExpire)
 
-	db, _ := getDatabaseAdapter(lb.config.Database)
+	db, _ := getDatabaseAdapter(lb.config.Database, lb.config.CacheDB)
 	db.Open(lb.config.Database, lb.config.Dsn)
 	lb.m = NewModel(db)
 	listNodeID, _ := lb.m.addNode(&node.Node{
