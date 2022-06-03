@@ -10,7 +10,7 @@
     <tbody>
       {{range $i, $item := .Lists}}
       {{ if mod $i 2 }}<tr>{{ else }}<tr class="e">{{ end }}
-        <td><a href="list/{{$item.ID}}/{{slug $item.Title}}" class="title">{{$item.Title}}</a></td>
+        <td><a href="list/{{$item.ID}}/{{slug $item.Title}}.html" class="title">{{$item.Title}}</a></td>
         <td class="ar">{{$item.Vote}}</td>
         <td class="ar">{{ time $item.Updated }}</td>
       </tr>

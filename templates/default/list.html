@@ -2,7 +2,7 @@
   <div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
     <div class="article">
       <img class="avatar" src="{{ gravatar .List.TripCode }}" />
-      <h3 id="{{.List.ID}}"><span itemprop="name">{{.List.Title}}</span> <a class="ref" href="/list/{{.List.ID}}/{{slug .List.Title}}">#{{.List.ID}}</a></h4>
+      <h3 id="{{.List.ID}}"><span itemprop="name">{{.List.Title}}</span> <a class="ref" href="/list/{{.List.ID}}/{{slug .List.Title}}.html">#{{.List.ID}}</a></h4>
       <div class="txt" itemprop="articleBody">
         {{ rawHTML .List.Rendered }}
       </div>
@@ -20,14 +20,14 @@
       <div itemscope="itemscope" itemtype="http://schema.org/Article" class="topic">
         <div class="article">
           <img class="avatar" src="{{ gravatar $item.TripCode }}" />
-          <h4 id="I{{$item.ID}}"><span itemprop="name">{{$item.Title}}</span> <a class="ref" href="/list/{{$.List.ID}}/{{slug $.List.Title}}#I{{$item.ID}}">#{{$item.ID}}</a></h4>
+          <h4 id="I{{$item.ID}}"><span itemprop="name">{{$item.Title}}</span> <a class="ref" href="/list/{{$.List.ID}}/{{slug $.List.Title}}.html#I{{$item.ID}}">#{{$item.ID}}</a></h4>
           <div class="txt" itemprop="articleBody">
             {{ rawHTML $item.Rendered }}
           </div>
         </div>
         <div class="meta ar">
           {{if $item.TripCode}} [<b>{{$item.TripCode}}</b>] [<a href="/edit.html?id={{$item.ID}}" rel="nofollow">{{lang "edit"}}</a>]{{end}}
-          [ <a href="/vote/{{$item.ID}}/{{slug $item.Title}}#post">{{lang "vote"}}</a> ]
+          [ <a href="/vote/{{$item.ID}}/{{slug $item.Title}}.html#post">{{lang "vote"}}</a> ]
           {{lang "rating"}}: <b>{{$item.Vote}}</b> |
           <em>{{ time $item.Created }}</em>
         </div>
