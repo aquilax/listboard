@@ -52,6 +52,7 @@ func TestListBoard(t *testing.T) {
 		ParentID: node.RootNodeID,
 		Title:    "Test Node",
 		DomainID: "1",
+		Level:    levelRoot,
 		TripCode: getTripCode("test"),
 	})
 
@@ -120,7 +121,7 @@ func TestListBoard(t *testing.T) {
 					t.Errorf("got HTTP status code %d, expected %d", wr.Code, http.StatusOK)
 				}
 
-				wantContent := "<loc>http://example.com/list/" + listNodeID + "/test-node</loc>"
+				wantContent := "<loc>http://www.example.com/list/" + listNodeID + "/test-node.html</loc>"
 				if !strings.Contains(wr.Body.String(), wantContent) {
 					t.Errorf(`response body "%s" does not contain %s`, wr.Body.String(), wantContent)
 				}
@@ -141,7 +142,7 @@ func TestListBoard(t *testing.T) {
 			},
 		},
 		{
-			"GET /list/:listID/:slug ",
+			"GET /list/:listID/:slug",
 			func() *http.Request {
 				r := httptest.NewRequest(http.MethodGet, "/list/"+listNodeID+"/test.html", nil)
 				ctx := context.WithValue(r.Context(), httprouter.ParamsKey, httprouter.Params{

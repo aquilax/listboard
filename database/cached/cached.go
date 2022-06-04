@@ -109,12 +109,11 @@ func (m Cached) GetNode(domainID, nodeID string) (*node.Node, error) {
 		m.nodeCache[domainID][key] = result
 	}
 	return result, err
-
 }
 
 func (m *Cached) AddNode(n *node.Node) (node.NodeID, error) {
 	result, err := m.db.AddNode(n)
-	if err != nil {
+	if err == nil {
 		m.clear(n.DomainID)
 	}
 	return result, err
@@ -122,7 +121,7 @@ func (m *Cached) AddNode(n *node.Node) (node.NodeID, error) {
 
 func (m *Cached) BumpVote(domainID node.DomainID, nodeID node.NodeID, vote int, updatedAt time.Time) error {
 	err := m.db.BumpVote(domainID, nodeID, vote, updatedAt)
-	if err != nil {
+	if err == nil {
 		m.clear(domainID)
 	}
 	return err
@@ -130,7 +129,7 @@ func (m *Cached) BumpVote(domainID node.DomainID, nodeID node.NodeID, vote int, 
 
 func (m *Cached) EditNode(n *node.Node) error {
 	err := m.db.EditNode(n)
-	if err != nil {
+	if err == nil {
 		m.clear(n.DomainID)
 	}
 	return err

@@ -100,8 +100,8 @@ func (s *Session) AddPath(url, label string) {
 	s.path = append(s.path, &PathLink{url, label})
 }
 
-func (s Session) GetNodeURL(n node.Node) *url.URL {
-	relativeURL := func(n node.Node) string {
+func (s Session) GetNodeURL(n *node.Node) *url.URL {
+	relativeURL := func(n *node.Node) string {
 		switch n.Level {
 		case levelRoot:
 			return "/list/" + n.ID + "/" + s.Slug(n.Title) + ".html"

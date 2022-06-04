@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"time"
 
@@ -191,6 +190,7 @@ func (l ListBoard) indexHandler(w http.ResponseWriter, r *http.Request, s *Sessi
 	sc := s.SiteConfig()
 
 	s.AddPath("", s.Lang("Home"))
+	s.Set("CanonicalURL", s.GetAbsoluteURL("/").String())
 	s.Set("Lists", l.m.mustGetChildNodes(sc.DomainID, node.RootNodeID, itemsPerPage, (page*itemsPerPage), "updated DESC"))
 	s.Set("Pagination", Pagination(PaginationConfig{
 		page:  page + 1,
@@ -210,7 +210,10 @@ func (l ListBoard) addFormHandler(w http.ResponseWriter, r *http.Request, s *Ses
 	sc := s.SiteConfig()
 
 	var errors ValidationErrors
-	var n node.Node
+	n := &node.Node{
+		ParentID: node.RootNodeID,
+		Level:    levelRoot,
+	}
 	tr := l.tp.Get(sc.Language)
 
 	if r.Method == "POST" {
@@ -218,12 +221,12 @@ func (l ListBoard) addFormHandler(w http.ResponseWriter, r *http.Request, s *Ses
 			n, errors = l.validateForm(r, sc.DomainID, node.RootNodeID, levelRoot, tr)
 			if len(errors) == 0 {
 				// save and redirect
-				nodeID, err := l.m.addNode(&n)
+				nodeID, err := l.m.addNode(n)
 				if err != nil {
 					return &HTTPError{Err: err, Code: http.StatusInternalServerError}
 				}
-				url := "/list/" + nodeID + "/" + s.Slug(n.Title)
-				http.Redirect(w, r, url, http.StatusFound)
+				n.ID = nodeID
+				http.Redirect(w, r, s.GetNodeURL(n).String(), http.StatusFound)
 				return nil
 			}
 		}
@@ -231,6 +234,7 @@ func (l ListBoard) addFormHandler(w http.ResponseWriter, r *http.Request, s *Ses
 
 	s.Set("Errors", errors)
 	s.Set("Form", n)
+	s.Set("CanonicalURL", s.GetAbsoluteURL("/add.html").String())
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("", s.Lang("New list"))
 	s.Set("Subtitle", s.Lang("New list"))
@@ -244,7 +248,7 @@ func (l ListBoard) editFormHandler(w http.ResponseWriter, r *http.Request, s *Se
 	sc := s.SiteConfig()
 
 	var errors ValidationErrors
-	var n node.Node
+	var n *node.Node
 	var item *node.Node
 	var nodeID node.NodeID
 	var err error
@@ -252,19 +256,18 @@ func (l ListBoard) editFormHandler(w http.ResponseWriter, r *http.Request, s *Se
 
 	tr := l.tp.Get(sc.Language)
 
+	item, err = l.m.getNode(sc.DomainID, nodeID)
+	if err != nil {
+		return err
+	}
+
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
-			level := levelRoot
-			parentID := node.RootNodeID
-			if level, err = strconv.Atoi(r.FormValue("level")); err != nil {
-				level = levelRoot
-			}
-			parentID = r.FormValue("parent_id")
-			n, errors = l.validateForm(r, sc.DomainID, parentID, level, tr)
+			n, errors = l.validateForm(r, sc.DomainID, item.ParentID, item.Level, tr)
 			if len(errors) == 0 {
-				n.ID = nodeID
+				n.ID = item.ID
 				// save and redirect
-				if err := l.m.editNode(&n); err != nil {
+				if err := l.m.editNode(n); err != nil {
 					return &HTTPError{Err: err, Code: http.StatusInternalServerError}
 				}
 				url := s.GetNodeURL(n).String()
@@ -272,11 +275,6 @@ func (l ListBoard) editFormHandler(w http.ResponseWriter, r *http.Request, s *Se
 				return nil
 			}
 		}
-	}
-
-	item, err = l.m.getNode(sc.DomainID, nodeID)
-	if err != nil {
-		return err
 	}
 
 	s.Set("Errors", errors)
@@ -299,14 +297,22 @@ func (l ListBoard) listHandler(w http.ResponseWriter, r *http.Request, s *Sessio
 	tr := l.tp.Get(sc.Language)
 
 	var errors ValidationErrors
-	var n node.Node
+	list, err := l.m.getNode(sc.DomainID, listID)
+	if err != nil {
+		return HTTPError{Err: err, Code: http.StatusNotFound, Message: "404 Page not found"}
+	}
+
+	n := &node.Node{
+		ParentID: list.ID,
+		Level:    levelList,
+	}
 
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
 			n, errors = l.validateForm(r, sc.DomainID, listID, levelList, tr)
 			if len(errors) == 0 {
 				// save and redirect
-				nodeID, err := l.m.addNode(&n)
+				nodeID, err := l.m.addNode(n)
 				if err != nil {
 					return &HTTPError{
 						Err:     err,
@@ -314,19 +320,16 @@ func (l ListBoard) listHandler(w http.ResponseWriter, r *http.Request, s *Sessio
 						Code:    http.StatusInternalServerError,
 					}
 				}
-				url := "/list/" + listID + "/" + s.Slug(n.Title) + "#I" + nodeID
-				http.Redirect(w, r, url, http.StatusFound)
+				n.ID = nodeID
+				http.Redirect(w, r, s.GetNodeURL(n).String(), http.StatusFound)
 				return nil
 			}
 		}
 	}
 
 	s.Set("Errors", errors)
+	s.Set("CanonicalURL", s.GetNodeURL(list).String())
 	s.Set("Form", n)
-	list, err := l.m.getNode(sc.DomainID, listID)
-	if err != nil {
-		return HTTPError{Err: err, Code: http.StatusNotFound, Message: "404 Page not found"}
-	}
 	page := getPageNumber(r.URL.Query().Get("page"))
 	s.Set("List", list)
 	s.Set("Items", l.m.mustGetChildNodes(sc.DomainID, listID, itemsPerPage, (page*itemsPerPage), "vote DESC, created"))
@@ -349,24 +352,29 @@ func (l ListBoard) listHandler(w http.ResponseWriter, r *http.Request, s *Sessio
 }
 
 func (l ListBoard) voteHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
-	r.Context()
 	params := httprouter.ParamsFromContext(r.Context())
 	itemID := node.NodeID(params.ByName("itemID"))
 
 	sc := s.SiteConfig()
 	tr := l.tp.Get(sc.Language)
 	var errors ValidationErrors
-	var n node.Node
+
 	item, err := l.m.getNode(sc.DomainID, itemID)
 	if err != nil {
 		return err
+	}
+
+	n := &node.Node{
+		ParentID: item.ID,
+		Title:    s.Lang("Re") + ": " + item.Title,
+		Level:    levelVote,
 	}
 
 	if r.Method == "POST" {
 		if !inHoneypot(r.FormValue("name")) {
 			n, errors = l.validateForm(r, sc.DomainID, item.ID, levelVote, tr)
 			if len(errors) == 0 {
-				newNodeID, err := l.m.addNode(&n)
+				newNodeID, err := l.m.addNode(n)
 				if err != nil {
 					return &HTTPError{
 						Err:     err,
@@ -396,16 +404,12 @@ func (l ListBoard) voteHandler(w http.ResponseWriter, r *http.Request, s *Sessio
 	}
 	s.Set("List", list)
 	s.Set("Item", item)
-	if len(n.Title) == 0 {
-		n.Title = s.Lang("Re") + ": " + item.Title
-	}
-	n.Level = item.Level + 1
-
+	s.Set("CanonicalURL", s.GetNodeURL(list).String())
 	s.Set("Form", n)
 	s.Set("Items", l.m.mustGetChildNodes(sc.DomainID, itemID, itemsPerPage, 0, "created DESC"))
 	s.Set("FormTitle", s.Lang("New vote"))
 	s.AddPath("/", s.Lang("Home"))
-	s.AddPath("/list/"+list.ID+"/"+s.Slug(list.Title), list.Title)
+	s.AddPath(s.GetNodeURL(list).String(), list.Title)
 	s.AddPath("", item.Title)
 	if t, found := l.templateCache[sc.getTemplateCacheKey("vote")]; found {
 		return s.renderTemplate(w, r, t)
@@ -425,7 +429,7 @@ func (l ListBoard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, s
 	for _, n := range *nodes {
 		feed.Items = append(feed.Items, &feeds.Item{
 			Title:       n.Title,
-			Link:        &feeds.Link{Href: s.GetNodeURL(n).String()},
+			Link:        &feeds.Link{Href: s.GetNodeURL(&n).String()},
 			Description: string(n.Rendered),
 			Created:     n.Created,
 		})
@@ -437,14 +441,14 @@ func (l ListBoard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, s
 func (l ListBoard) feedHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
 	sc := s.SiteConfig()
 	nodes := l.m.mustGetChildNodes(sc.DomainID, node.RootNodeID, 20, 0, "created DESC")
-	baseUrl := "http://" + r.Host
+	baseUrl := sc.Domain
 	return l.feed(w, sc, baseUrl, s, nodes)
 }
 
 func (l ListBoard) feedAllHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
 	sc := s.SiteConfig()
 	nodes := l.m.mustGetAllNodes(sc.DomainID, 20, 0, "created DESC")
-	baseUrl := "http://" + r.Host
+	baseUrl := sc.Domain
 	return l.feed(w, sc, baseUrl, s, nodes)
 }
 
@@ -454,7 +458,7 @@ func (l ListBoard) sitemapHandler(w http.ResponseWriter, r *http.Request, s *Ses
 	var urlSet sitemap.URLSet
 	for _, n := range *nodes {
 		urlSet.URLs = append(urlSet.URLs, sitemap.URL{
-			Loc:        "http://" + r.Host + "/list/" + n.ID + "/" + s.Slug(n.Title),
+			Loc:        s.GetNodeURL(&n).String(),
 			LastMod:    &n.Created,
 			ChangeFreq: sitemap.Daily,
 			Priority:   0.7,
@@ -469,8 +473,8 @@ func (l ListBoard) sitemapHandler(w http.ResponseWriter, r *http.Request, s *Ses
 	return err
 }
 
-func (l ListBoard) validateForm(r *http.Request, domainID node.DomainID, parentID node.NodeID, level int, ln *Language) (node.Node, ValidationErrors) {
-	n := node.Node{
+func (l ListBoard) validateForm(r *http.Request, domainID node.DomainID, parentID node.NodeID, level int, ln *Language) (*node.Node, ValidationErrors) {
+	n := &node.Node{
 		ParentID: parentID,
 		DomainID: domainID,
 		Title:    strings.TrimSpace(r.FormValue("title")),

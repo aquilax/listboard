@@ -93,7 +93,7 @@ func (m *Memory) BumpVote(domainID node.DomainID, nodeID node.NodeID, vote int, 
 
 func (m *Memory) EditNode(n *node.Node) error {
 	for i := range m.nl {
-		if m.nl[i].ID == n.ID {
+		if m.nl[i].ID == n.ID && m.nl[i].TripCode == n.TripCode {
 			m.nl[i] = *n
 			return nil
 		}

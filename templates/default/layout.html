@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{if .Subtitle}}{{.Subtitle}}: {{end}}{{.Title}}</title>
+  <title>{{if .Subtitle }}{{.Subtitle}}: {{end}}{{.Title}}</title>
   <meta name="description" content="{{.Description}}">
+  <link rel="canonical" href="{{ .CanonicalURL }}" />
   <link rel="alternate" type="application/rss+xml" title="{{lang "Latest lists"}}" href="/feed.xml">
   <link rel="alternate" type="application/rss+xml" title="{{lang "Latest all"}}" href="/all.xml">
   <link rel=stylesheet href="/assets/{{.Css}}">
