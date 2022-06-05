@@ -4,12 +4,14 @@ go 1.18
 
 require (
 	github.com/aquilax/tripcode v1.0.0
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/feeds v1.1.1
-	github.com/gorilla/mux v1.8.0
 	github.com/gosimple/slug v1.12.0
 	github.com/jmoiron/sqlx v1.3.5
+	github.com/julienschmidt/httprouter v1.3.0
+	github.com/lib/pq v1.2.0
 	github.com/microcosm-cc/bluemonday v1.0.18
-	github.com/russross/blackfriday v1.6.0
+	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sourcegraph/sitemap v0.0.0-20171024204827-24a7b21aa1d8
 	modernc.org/sqlite v1.17.3
 )
@@ -17,7 +19,6 @@ require (
 require (
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
@@ -42,3 +43,5 @@ require (
 	modernc.org/strutil v1.1.2 // indirect
 	modernc.org/token v1.0.0 // indirect
 )
+
+replace github.com/gosimple/slug => github.com/aquilax/slug v1.12.1-0.20211224131822-379e310f018e

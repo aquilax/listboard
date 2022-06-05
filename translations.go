@@ -29,14 +29,15 @@ func NewLanguage(basePath, lang string) *Language {
 	var t Translations
 	found := true
 	fileName := basePath + lang + ".json"
+	log.Printf("loading language %s from %s", lang, fileName)
 	file, err := os.Open(fileName)
 	if err != nil {
 		found = false
-		log.Printf("Language %s not found", fileName)
+		log.Printf("language %s not found", fileName)
 	}
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&t); err != nil {
-		log.Printf("Error loading language %s, %s", fileName, err)
+		log.Printf("error loading language %s, %s", fileName, err)
 		found = false
 		t = make(Translations)
 	}

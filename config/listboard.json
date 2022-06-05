@@ -1,23 +1,24 @@
 {
-	"server": ":8081",
-	"database": "sqlite",
-	"dsn": "./db/test.sqlite",
-	"translations": "./translations/",
-	"token": "X-Server",
-	"post_block_expire": "10s",
-	"servers": {
-		"": {
-			"domain_id": 1,
-			"analytics": "UA-X",
-			"domain": "example.com",
-			"language": "en_US",
-			"css": "style.css",
-			"title": "Default site",
-			"description": "This is the default listboard site",
-			"author_name": "Example Author",
-			"author_email": "Example Email",
-			"post_header": "PostHeader",
-			"pre_footer": "PreFooter"
-		}
-	}
+  "server": "8081",
+  "database": "memory",
+  "dsn": "",
+  "cache_db": true,
+  "translations": "./translations/",
+  "token": "X-Server",
+  "post_block_expire": "10s",
+  "servers": {
+    "": {
+      "domain_id": "1",
+      "analytics": "UA-X",
+      "domain": "http://localhost:8081",
+      "language": "en_US",
+      "css": "style.css",
+      "title": "Default site",
+      "description": "This is the default list board",
+      "author_name": "Example Author",
+      "author_email": "author@example.com",
+      "post_header": "PostHeader",
+      "pre_footer": "PreFooter"
+    }
+  }
 }
