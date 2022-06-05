@@ -199,11 +199,7 @@ func (l ListBoard) indexHandler(w http.ResponseWriter, r *http.Request, s *Sessi
 		url:   "?",
 		param: "page",
 	}))
-	if t, found := l.templateCache[sc.getTemplateCacheKey("index")]; found {
-		return s.renderTemplate(w, r, t)
-	}
-
-	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("index.html"))
+	return l.renderTemplateKey(w, r, s, sc, "index")
 }
 
 func (l ListBoard) addFormHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
@@ -238,10 +234,7 @@ func (l ListBoard) addFormHandler(w http.ResponseWriter, r *http.Request, s *Ses
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("", s.Lang("New list"))
 	s.Set("Subtitle", s.Lang("New list"))
-	if t, found := l.templateCache[sc.getTemplateCacheKey("add")]; found {
-		return s.renderTemplate(w, r, t)
-	}
-	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("add.html"), sc.templatePath("form.html"))
+	return l.renderTemplateKey(w, r, s, sc, "add")
 }
 
 func (l ListBoard) editFormHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
@@ -282,11 +275,7 @@ func (l ListBoard) editFormHandler(w http.ResponseWriter, r *http.Request, s *Se
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("", s.Lang("Edit"))
 	s.Set("Subtitle", s.Lang("Edit"))
-	if t, found := l.templateCache[sc.getTemplateCacheKey("edit")]; found {
-		return s.renderTemplate(w, r, t)
-	}
-
-	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("edit.html"), sc.templatePath("form.html"))
+	return l.renderTemplateKey(w, r, s, sc, "edit")
 }
 
 func (l ListBoard) listHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
@@ -327,10 +316,11 @@ func (l ListBoard) listHandler(w http.ResponseWriter, r *http.Request, s *Sessio
 		}
 	}
 
+	page := getPageNumber(r.URL.Query().Get("page"))
+
 	s.Set("Errors", errors)
 	s.Set("CanonicalURL", s.GetNodeURL(list).String())
 	s.Set("Form", n)
-	page := getPageNumber(r.URL.Query().Get("page"))
 	s.Set("List", list)
 	s.Set("Items", l.m.mustGetChildNodes(sc.DomainID, listID, itemsPerPage, (page*itemsPerPage), "vote DESC, created"))
 	s.Set("FormTitle", s.Lang("New suggestion"))
@@ -343,12 +333,10 @@ func (l ListBoard) listHandler(w http.ResponseWriter, r *http.Request, s *Sessio
 		url:   "?",
 		param: "page",
 	}))
+
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath("", list.Title)
-	if t, found := l.templateCache[sc.getTemplateCacheKey("list")]; found {
-		return s.renderTemplate(w, r, t)
-	}
-	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("list.html"), sc.templatePath("form.html"))
+	return l.renderTemplateKey(w, r, s, sc, "list")
 }
 
 func (l ListBoard) voteHandler(w http.ResponseWriter, r *http.Request, s *Session) error {
@@ -411,11 +399,7 @@ func (l ListBoard) voteHandler(w http.ResponseWriter, r *http.Request, s *Sessio
 	s.AddPath("/", s.Lang("Home"))
 	s.AddPath(s.GetNodeURL(list).String(), list.Title)
 	s.AddPath("", item.Title)
-	if t, found := l.templateCache[sc.getTemplateCacheKey("vote")]; found {
-		return s.renderTemplate(w, r, t)
-	}
-
-	return s.render(w, r, sc.templatePath("layout.html"), sc.templatePath("vote.html"), sc.templatePath("form.html"))
+	return l.renderTemplateKey(w, r, s, sc, "vote")
 }
 
 func (l ListBoard) feed(w http.ResponseWriter, sc *SiteConfig, baseURL string, s *Session, nodes *node.NodeList) error {
@@ -544,5 +528,18 @@ func getDatabaseAdapter(db string, useCache bool) (database.Database, error) {
 		return cached.New(dbAdapter), err
 	}
 	return dbAdapter, err
+}
 
+func (l ListBoard) renderTemplateKey(w http.ResponseWriter, r *http.Request, s *Session, sc *SiteConfig, key templateIndex) error {
+	if t, found := l.templateCache[sc.getTemplateCacheKey(key)]; found {
+		return s.renderTemplate(w, r, t)
+	}
+	if templates, found := templateMap[key]; found {
+		templatePaths := make([]string, len(templates))
+		for i := range templates {
+			templatePaths[i] = sc.templatePath(templates[i])
+		}
+		return s.render(w, r, templatePaths...)
+	}
+	return fmt.Errorf("templates not found for key %s", key)
 }
